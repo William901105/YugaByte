@@ -1,4 +1,45 @@
-# YugaByte
+# YugaByte Installation
+## Enviroment
+1. ubuntu 20.04
+2. python3
+```
+sudo apt install python-is-python3
+```
+
+3. wget
+```
+sudo apt install wget
+```
+
+## Download Yugabyte
+```
+wget https://software.yugabyte.com/releases/2.25.0.0/yugabyte-2.25.0.0-b489-linux-x86_64.tar.gz
+tar xvfz yugabyte-2.25.0.0-b489-linux-x86_64.tar.gz && cd yugabyte-2.25.0.0/
+```
+
+## Configure YugabyteDB
+```
+./bin/post_install.sh
+```
+
+
+## Create a local cluster
+```
+./bin/yugabyted start --advertise_address 127.0.0.1
+```
+
+## UI
+Address: 127.0.0.1:15433
+
+**The address perhaps is 127.0.1.1!!!**
+
+We can use
+`./bin/yugabyted status`
+to check the correct address.
+
+You can see more information on https://hackmd.io/@WEIHUNGLIN/Bk8-pEnsyl
+
+# Components of Our Project
 ## access_control_system
 	1.透過record_api抓取打卡紀錄，並判斷有無異常
 	2.若有異常，將異常傳送給record_api
