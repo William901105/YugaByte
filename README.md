@@ -75,10 +75,12 @@ You can see more information on https://hackmd.io/@WEIHUNGLIN/Bk8-pEnsyl
 	2.request一個user_id，將該user_id的薪資response回去
 	3.須注意，要檢查request的user_id是否為其下屬
 ## authorization_api
+	1.request一個access token與user_id，response其是否為合法
+	2.request一個refresh token與user_id，response其是否合法，若合法則response更新後的access token與refresh token
+	3.更新token後，將新的token更新至database
 
 
 # Database Table
------------------------------
 ## authorization(紀錄授權用的token)
 	1.user_id : 用戶名稱(boss/employee)
 	2.access_token : 授權用的token
