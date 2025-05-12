@@ -1,7 +1,0 @@
-{
-    "host": "0.tcp.jp.ngrok.io",
-    "port": "14422",
-    "database": "yugabyte",
-    "user": "yugabyte",
-    "password": "yugabyte"
-}
