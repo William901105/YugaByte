@@ -1,0 +1,91 @@
+<!--
+此頁面為員工打卡記錄查詢頁面
+功能：
+1. 顯示員工個人的打卡記錄列表
+2. 包含日期、打卡類型和時間資訊
+3. 支援時間戳記的本地化顯示
+4. 無記錄時顯示提示訊息
+5. 具備身份驗證檢查
+6. 整合後端 API 獲取記錄數據
+-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打卡記錄</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>打卡記錄</h1>
+        <table id="recordsTable">
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>類型</th>
+                    <th>時間</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 動態插入記錄 -->
+            </tbody>
+        </table>
+        <p id="noRecordsMessage" style="display: none; text-align: center; color: gray;">目前沒有打卡記錄。</p>
+        <button id="logoutButton">登出</button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            const userId = localStorage.getItem('user_id');
+            const accessToken = localStorage.getItem('access_token');
+
+            if (!userId || !accessToken) {
+                alert('未登入，請重新登入');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:5000/api/records?user_id=${userId}&access_token=${accessToken}`);
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error(data.message || '無法取得打卡記錄');
+                }
+
+                const recordsTableBody = document.querySelector('#recordsTable tbody');
+                if (data.data.length === 0) {
+                    document.getElementById('noRecordsMessage').style.display = 'block';
+                } else {
+                    data.data.forEach(record => {
+                        const row = document.createElement('tr');
+
+                        const dateCell = document.createElement('td');
+                        const typeCell = document.createElement('td');
+                        const timeCell = document.createElement('td');
+
+                        const date = new Date(record.time * 1000); // 假設時間戳為秒
+                        dateCell.textContent = date.toLocaleDateString('zh-TW');
+                        typeCell.textContent = record.type;
+                        timeCell.textContent = date.toLocaleTimeString('zh-TW');
+
+                        row.appendChild(dateCell);
+                        row.appendChild(typeCell);
+                        row.appendChild(timeCell);
+
+                        recordsTableBody.appendChild(row);
+                    });
+                }
+            } catch (err) {
+                alert(`無法取得打卡記錄：${err.message}`);
+                console.error(err);
+            }
+
+            document.getElementById('logoutButton').addEventListener('click', function () {
+                localStorage.clear();
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+</html>

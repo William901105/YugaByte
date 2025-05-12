@@ -1,0 +1,74 @@
+<!--
+此頁面為員工薪資查詢頁面
+功能：
+1. 顯示員工個人的薪資資訊
+2. 支援資料載入中的狀態顯示
+3. 查詢失敗時提供重試機制
+4. 具備身份驗證檢查
+5. 整合後端 API 獲取薪資數據
+6. 包含登出功能
+-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>薪資查詢</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>薪資查詢</h1>
+        <p id="salaryInfo">載入中...</p>
+        <button id="retryButton" style="display: none;">重新嘗試</button>
+        <button id="logoutButton">登出</button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            const userId = localStorage.getItem('user_id');
+            const accessToken = localStorage.getItem('access_token');
+
+            if (!userId || !accessToken) {
+                alert('未登入，請重新登入');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const salaryInfoElement = document.getElementById('salaryInfo');
+            const retryButton = document.getElementById('retryButton');
+
+            async function fetchSalary() {
+                try {
+                    // 呼叫 /api/salary 取得薪資資訊
+                    const response = await fetch(`http://localhost:5000/api/salary?user_id=${userId}&access_token=${accessToken}`);
+                    const data = await response.json();
+
+                    if (data.status !== 'success') {
+                        throw new Error(data.message || '無法取得薪資資訊');
+                    }
+
+                    // 顯示薪資資訊
+                    salaryInfoElement.textContent = `您的薪資為：${data.data.base_salary} 元`;
+                    retryButton.style.display = 'none'; // 隱藏重新嘗試按鈕
+                } catch (err) {
+                    salaryInfoElement.textContent = `無法取得薪資資訊：${err.message}`;
+                    retryButton.style.display = 'block'; // 顯示重新嘗試按鈕
+                    console.error(err);
+                }
+            }
+
+            // 初次載入時呼叫 fetchSalary
+            fetchSalary();
+
+            // 點擊重新嘗試按鈕時重新呼叫 fetchSalary
+            retryButton.addEventListener('click', fetchSalary);
+
+            // 登出功能
+            document.getElementById('logoutButton').addEventListener('click', function () {
+                localStorage.clear();
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+</html>
