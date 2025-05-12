@@ -83,6 +83,11 @@ def drop_tables(yb):
         with yb.cursor() as yb_cursor:
             yb_cursor.execute('DROP TABLE IF EXISTS Author')
             yb_cursor.execute('DROP TABLE IF EXISTS Record')
+            yb_cursor.execute('DROP TABLE IF EXISTS Log')
+            yb_cursor.execute('DROP TABLE IF EXISTS Salary')
+            yb_cursor.execute('DROP TABLE IF EXISTS EmployeeAccount')
+            yb_cursor.execute('DROP TABLE IF EXISTS BossAccount')
+
         yb.commit()
     except Exception as e:
         print("Exception while dropping tables")

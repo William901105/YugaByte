@@ -1,22 +1,37 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import psycopg2, json
+import psycopg2
+import json
 
 app = Flask(__name__)
 CORS(app)
 
-# 讀取資料庫設定（單一 url.json）
-with open('url.json') as f:
-    cfg = json.load(f)
+with open('access_control_system/url.json') as f:
+    data = json.load(f)
+    HOST = data['host']
+    PORT = data['port']
+
+# configurations for database connection
+CONFIG = {
+    'host': HOST,
+    'port': PORT,
+    'dbName': 'yugabyte',
+    'dbUser': 'yugabyte',
+    'dbPassword': 'yugabyte',
+    'sslMode': '',
+    'sslRootCert': ''
+}
+
 
 def get_db_connection():
     return psycopg2.connect(
-        host=cfg['host'],
-        port=cfg['port'],
-        dbname=cfg['database'],
-        user=cfg['user'],
-        password=cfg['password']
-    )
+        host=CONFIG['host'],
+        port=CONFIG['port'],
+        database=CONFIG['dbName'],
+        user=CONFIG['dbUser'],
+        password=CONFIG['dbPassword'],
+        sslrootcert=CONFIG['sslRootCert'])
+
 
 @app.route('/record/', methods=['GET', 'POST'])
 def record_handler():
@@ -34,8 +49,8 @@ def record_handler():
 
         try:
             conn = get_db_connection()
-            cur  = conn.cursor()
-            
+            cur = conn.cursor()
+
             # 原本 Record 表的查詢
             cur.execute(
                 'SELECT user_id, type, time FROM Record WHERE time >= %s AND time <= %s',
@@ -65,26 +80,27 @@ def record_handler():
     else:  # POST
         # --- 存資料 Log ---
         data = request.get_json() or {}
-        uid  = data.get('user_id')
-        typ  = data.get('type')
-        tm   = data.get('time')
-        dur  = data.get('duration')
+        uid = data.get('user_id')
+        typ = data.get('type')
+        tm = data.get('time')
+        dur = data.get('duration')
 
         if uid is None or typ is None or tm is None or dur is None:
             return jsonify({'error': '請提供 user_id, type, time, duration'}), 400
 
         try:
             conn = get_db_connection()
-            cur  = conn.cursor()
+            cur = conn.cursor()
             cur.execute(
                 'INSERT INTO Log (user_id, type, time, duration) VALUES (%s, %s, %s, %s)',
                 (uid, typ, tm, dur)
             )
             conn.commit()
             conn.close()
-            return jsonify({'status':'success'}), 201
+            return jsonify({'status': 'success'}), 201
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     print("Flask 伺服器啟動：http://127.0.0.1:5000/")

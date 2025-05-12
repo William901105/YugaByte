@@ -1,0 +1,182 @@
+<!--
+此頁面為主管查看所有員工薪資紀錄的頁面
+功能：
+1. 顯示所有員工的薪資統計
+2. 提供詳細資料查看功能
+3. 具備身份驗證檢查
+4. 包含返回主選單功能
+-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>所有員工薪資紀錄</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>所有員工薪資紀錄</h1>
+
+        <!-- 統計資料表格 -->
+        <div class="salary-section">
+            <table>
+                <thead>
+                    <tr>
+                        <th>員工帳號</th>
+                        <th>本月薪資</th>
+                        <th>加班時數</th>
+                        <th>加班費</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="salaryTable">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 返回按鈕 -->
+        <div class="button-group">
+            <button onclick="window.location.href='boss.html'" class="back-button">返回主選單</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 驗證登入狀態
+            const userId = localStorage.getItem('user_id');
+            if (!userId) {
+                alert('未登入，請重新登入');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // 載入所有員工薪資資料
+            loadAllEmployeesSalary();
+
+            function loadAllEmployeesSalary() {
+                const userId = localStorage.getItem('user_id');
+                const accessToken = localStorage.getItem('access_token');
+
+                if (!userId || !accessToken) {
+                    alert('未登入或登入已過期，請重新登入');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                fetch('http://localhost:5001/api/boss/employees_info', {
+                    headers: {
+                        'Authorization': accessToken,
+                        'X-User-ID': userId
+                    }
+                })
+                .then(res => {
+                    if (res.status === 401) {
+                        // Token 過期，嘗試刷新
+                        const refreshToken = localStorage.getItem('refresh_token');
+                        return fetch('http://localhost:5000/authorization/refreshToken', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                refresh_token: refreshToken,
+                                user_id: userId
+                            })
+                        }).then(refreshRes => {
+                            if (!refreshRes.ok) {
+                                throw new Error('重新整理認證失敗');
+                            }
+                            return refreshRes.json();
+                        }).then(tokens => {
+                            // 儲存新的 tokens
+                            localStorage.setItem('access_token', tokens.new_access_token);
+                            localStorage.setItem('refresh_token', tokens.new_refresh_token);
+                            
+                            // 重新發送原始請求
+                            return fetch('http://localhost:5001/api/boss/employees_info', {
+                                headers: {
+                                    'Authorization': tokens.new_access_token,
+                                    'X-User-ID': userId
+                                }
+                            });
+                        });
+                    }
+                    return res;
+                })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status !== 'success' || !result.data) {
+                        updateSalaryTable([]);
+                        return;
+                    }
+                    // 計算加班時數和加班費
+                    const processedData = result.data.map(emp => {
+                        // 計算加班時數 (根據打卡記錄)
+                        let overtimeHours = 0;
+                        if (emp.clock_records['上班'] && emp.clock_records['下班']) {
+                            for (let i = 0; i < emp.clock_records['下班'].length; i++) {
+                                const clockOut = new Date(emp.clock_records['下班'][i]);
+                                const clockIn = new Date(emp.clock_records['上班'][i]);
+                                const hours = (clockOut - clockIn) / (1000 * 60 * 60);
+                                if (hours > 8) {
+                                    overtimeHours += hours - 8;
+                                }
+                            }
+                        }
+                          // 計算加班費
+                        const hourlyRate = emp.salary / 240; // 基本時薪
+
+                        // 加班費計算規則：
+                        // 1. 前2小時，時薪1.33倍
+                        // 2. 2小時後，時薪1.66倍
+                        // 3. 假日加班，時薪2倍
+                        let overtimePay = 0;
+                        
+                        if (overtimeHours > 0) {
+                            const firstTwoHours = Math.min(overtimeHours, 2);
+                            const remainingHours = Math.max(overtimeHours - 2, 0);
+                            overtimePay = (firstTwoHours * hourlyRate * 1.33) + 
+                                        (remainingHours * hourlyRate * 1.66);
+
+                            // 檢查是否為假日加班
+                            const clockInDate = new Date(emp.clock_records['上班'][0]);
+                            if (clockInDate.getDay() === 0 || clockInDate.getDay() === 6) {
+                                overtimePay = overtimeHours * hourlyRate * 2; // 假日加班2倍
+                            }
+                        }
+
+                        return {
+                            ...emp,
+                            overtimeHours: Math.round(overtimeHours),
+                            overtimePay: Math.round(overtimePay)
+                        };
+                    });
+                    updateSalaryTable(processedData);
+                })
+                .catch(error => {
+                    console.error('獲取資料失敗:', error);
+                    alert('獲取資料失敗，請稍後再試');
+                });
+            }
+
+            function updateSalaryTable(data) {
+                const tbody = document.getElementById('salaryTable');
+                tbody.innerHTML = data.length ? data.map(record => `
+                    <tr>
+                        <td>${record.user_id}</td>
+                        <td>${record.salary.toLocaleString()}</td>
+                        <td>${record.overtimeHours}</td>
+                        <td>${record.overtimePay.toLocaleString()}</td>
+                        <td>
+                            <button onclick="window.location.href='boss-employee-search.html?account=${record.user_id}'">
+                                查看詳細
+                            </button>
+                        </td>
+                    </tr>
+                `).join('') : '<tr><td colspan="5">無員工資料</td></tr>';
+            }
+        });
+    </script>
+</body>
+</html>
