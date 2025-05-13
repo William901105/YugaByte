@@ -266,9 +266,9 @@ def record_handler():
 def get_salary_logs():
     # get query parameters from request
     data = request.get_json()
-    start_time = data.get('start')
-    end_time = data.get('end')
-
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')
+    print(start_time, end_time)
     # find the data in log table between start_time and end_time
     if start_time and end_time:
         # if start_time and end_time are not float, return 400
@@ -301,7 +301,7 @@ def get_salary_logs():
         return jsonify({"error": "Database error"}), 500
 
 
-@app.route('/salary', methods=['POST'])  # 新增或更新薪資
+@app.route('/salary/update', methods=['POST'])  # 新增或更新薪資
 def update_salary():
     """更新薪資"""
     data = request.get_json()
@@ -317,7 +317,6 @@ def update_salary():
     try:
         conn = get_db_connection()
         curs = conn.cursor()
-        print("haha")
         # update salary if user_id exists, otherwise insert new record
         curs.execute(
             'SELECT user_id, salary FROM salary WHERE user_id = %s', (user_id,))
@@ -340,6 +339,30 @@ def update_salary():
     except Exception as e:
         conn.rollback()
         app.logger.error(f"Update failed: {str(e)}")
+        return jsonify({"error": "Database error"}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.route('/salary/find', methods=['GET'])  # 查詢薪資
+def get_user_salary():
+    """查詢薪資"""
+    user_id = request.get_json().get('user_id')
+
+    try:
+        conn = get_db_connection()
+        curs = conn.cursor()
+        curs.execute(
+            'SELECT user_id, salary FROM salary WHERE user_id = %s', (user_id,))
+        result = curs.fetchone()
+
+        if result:
+            return jsonify({"user_id": result[0], "salary": result[1]}), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+    except Exception as e:
+        app.logger.error(f"Query failed: {str(e)}")
         return jsonify({"error": "Database error"}), 500
     finally:
         if conn:
