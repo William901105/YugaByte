@@ -67,6 +67,8 @@ if __name__ == '__main__':
                     log['user_id'], log['type'], log['duration'])
                 print(res)
             # 每10分鐘執行一次
+            start_time = end_time
+            end_time = end_time + 600
             time.sleep(600)
         except KeyboardInterrupt:
             print("手動中斷，退出系統")

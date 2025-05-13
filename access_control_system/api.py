@@ -193,7 +193,7 @@ def run_update_token():
         return jsonify(result), 200
 
 
-@app.route('/record/', methods=['GET', 'POST'])
+@app.route('/record', methods=['GET', 'POST'])
 def record_handler():
     if request.method == 'GET':
         # --- 取資料 Record & EmployeeAccount ---
@@ -212,9 +212,10 @@ def record_handler():
             cur = conn.cursor()
 
             # 原本 Record 表的查詢
+            # sorting by time
             cur.execute(
-                'SELECT user_id, type, time FROM Record WHERE time >= %s AND time <= %s',
-                (ts, te)
+                'SELECT user_id, type, time FROM Record WHERE time >= %s AND time <= %s ORDER BY time DESC',
+                (ts, te)  # time_start, time_end
             )
             rows = cur.fetchall()
             record_data = [
@@ -223,9 +224,9 @@ def record_handler():
             ]
 
             # 新增：從 EmployeeAccount 表撈取所有 account
-            cur.execute('SELECT account FROM employeeaccount')
+            cur.execute('SELECT account,boss_id FROM employeeaccount')
             acc_rows = cur.fetchall()
-            accounts = [r[0] for r in acc_rows]
+            accounts = [{"employee": r[0], "boss": r[1]} for r in acc_rows]
 
             conn.close()
 
