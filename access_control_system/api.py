@@ -10,11 +10,17 @@ import hashlib
 from functools import wraps
 import requests
 
-# read host name from host.json file
+# read host name from url.json file
 with open('access_control_system/url.json') as f:
     data = json.load(f)
     HOST = data['host']
     PORT = data['port']
+
+# read host name from backup_url.json file
+with open('access_control_system/backup_url.json') as f:
+    data = json.load(f)
+    BACKUPHOST = data['host']
+    BACKUPPORT = data['port']
 
 # configurations for database connection
 CONFIG = {
@@ -27,6 +33,8 @@ CONFIG = {
     'sslRootCert': ''
 }
 
+# get the database connection
+
 
 def get_db_connection():
     return psycopg2.connect(
@@ -37,24 +45,33 @@ def get_db_connection():
         password=CONFIG['dbPassword'],
         sslrootcert=CONFIG['sslRootCert'])
 
+# get the backup database connection
+
+
+def get_backup_db_connection():
+    return psycopg2.connect(
+        host=BACKUPHOST,
+        port=BACKUPPORT,
+        database=CONFIG['dbName'],
+        user=CONFIG['dbUser'],
+        password=CONFIG['dbPassword'],
+        sslrootcert=CONFIG['sslRootCert'])
+
 
 def authorization(access_token, user_id):  # authirization main function
     # Connect to the database
     try:
-        if CONFIG['sslMode'] != '':
-            conn = psycopg2.connect(host=CONFIG['host'], port=CONFIG['port'], database=CONFIG['dbName'],
-                                    user=CONFIG['dbUser'], password=CONFIG['dbPassword'],
-                                    sslmode=CONFIG['sslMode'], sslrootcert=CONFIG['sslRootCert'],
-                                    connect_timeout=10)
-        else:
-            conn = psycopg2.connect(host=CONFIG['host'], port=CONFIG['port'], database=CONFIG['dbName'],
-                                    user=CONFIG['dbUser'], password=CONFIG['dbPassword'],
-                                    connect_timeout=10)
+        conn = get_db_connection()
 
     except Exception as e:
-        print("Exception while connecting to YugabyteDB")
+        print("Exception while connecting to Main YugabyteDB")
         print(e)
-        return None
+        try:
+            conn = get_backup_db_connection()
+        except Exception as e:
+            print("Exception while connecting to Backup YugabyteDB")
+            print(e)
+            return None
 
     print(">>>> Successfully connected to YugabyteDB!")
 
@@ -102,20 +119,16 @@ def authorization(access_token, user_id):  # authirization main function
 def update_token(refresh_token, user_id):  # update the token function
     # Connect to the database
     try:
-        if CONFIG['sslMode'] != '':
-            conn = psycopg2.connect(host=CONFIG['host'], port=CONFIG['port'], database=CONFIG['dbName'],
-                                    user=CONFIG['dbUser'], password=CONFIG['dbPassword'],
-                                    sslmode=CONFIG['sslMode'], sslrootcert=CONFIG['sslRootCert'],
-                                    connect_timeout=10)
-        else:
-            conn = psycopg2.connect(host=CONFIG['host'], port=CONFIG['port'], database=CONFIG['dbName'],
-                                    user=CONFIG['dbUser'], password=CONFIG['dbPassword'],
-                                    connect_timeout=10)
+        conn = get_db_connection()
 
     except Exception as e:
-        print("Exception while connecting to YugabyteDB")
-        print(e)
-        return None
+        print("Exception while connecting to Main YugabyteDB")
+        try:
+            conn = get_backup_db_connection()
+        except Exception as e:
+            print("Exception while connecting to Backup YugabyteDB")
+            print(e)
+            return None
 
     print(">>>> Successfully connected to YugabyteDB!")
 
@@ -149,6 +162,21 @@ def update_token(refresh_token, user_id):  # update the token function
     update_query = """
         UPDATE Author SET access_token = %s, refresh_token = %s, created_at = %s WHERE user_id = %s
     """
+    # update in the backup database
+    try:
+        backup_conn = get_backup_db_connection()
+        backup_cursor = backup_conn.cursor(
+            cursor_factory=psycopg2.extras.DictCursor)
+        backup_cursor.execute(update_query, (new_access_token,
+                                             new_refresh_token, time.time(), user_id))
+        backup_conn.commit()
+        backup_cursor.close()
+        backup_conn.close()
+        print("Backup successfully.")
+    except Exception as e:
+        print("Exception while updating in Backup YugabyteDB")
+        print(e)
+
     cursor.execute(update_query, (new_access_token,
                    new_refresh_token, time.time(), user_id))
     conn.commit()
@@ -165,6 +193,7 @@ app = Flask(__name__)
 CORS(app)
 
 
+# finish backup database
 @app.route('/authorization/authorize', methods=['GET'])
 def run_authorization():
     data = request.get_json()
@@ -180,6 +209,7 @@ def run_authorization():
         return jsonify({"result": "Valid"}), 200
 
 
+# finish backup database
 @app.route('/authorization/refreshToken', methods=['POST'])
 def run_update_token():
     data = request.get_json()
@@ -191,6 +221,8 @@ def run_update_token():
         return jsonify({"result": "Invalid"}), 401
     else:
         return jsonify(result), 200
+
+# finish backup database
 
 
 @app.route('/record', methods=['GET', 'POST'])
@@ -236,7 +268,40 @@ def record_handler():
                 'accounts': accounts
             })
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            # using backup database
+            print("Exception while inserting into Main YugabyteDB")
+            print(e)
+            try:
+                backup_conn = get_backup_db_connection()
+                backup_cur = backup_conn.cursor()
+                # sorting by time
+                backup_cur.execute(
+                    'SELECT user_id, type, time FROM Record WHERE time >= %s AND time <= %s ORDER BY time DESC',
+                    (ts, te)  # time_start, time_end
+                )
+                rows = backup_cur.fetchall()
+                record_data = [
+                    {'user_id': r[0], 'type': r[1], 'time': r[2]}
+                    for r in rows
+                ]
+
+                # 新增：從 EmployeeAccount 表撈取所有 account
+                backup_cur.execute(
+                    'SELECT account,boss_id FROM employeeaccount')
+                acc_rows = backup_cur.fetchall()
+                accounts = [{"employee": r[0], "boss": r[1]} for r in acc_rows]
+
+                backup_conn.close()
+
+                return jsonify({
+                    'status': 'success',
+                    'data': record_data,
+                    'accounts': accounts
+                })
+            except Exception as e:
+                print("Exception while inserting into Backup YugabyteDB")
+                print(e)
+                return jsonify({'error': str(e)}), 500
 
     else:  # POST
         # --- 存資料 Log ---
@@ -256,11 +321,42 @@ def record_handler():
                 'INSERT INTO Log (user_id, type, time, duration) VALUES (%s, %s, %s, %s)',
                 (uid, typ, tm, dur)
             )
+            # backup database
+            try:
+                backup_conn = get_backup_db_connection()
+                backup_cur = backup_conn.cursor()
+                backup_cur.execute(
+                    'INSERT INTO Log (user_id, type, time, duration) VALUES (%s, %s, %s, %s)',
+                    (uid, typ, tm, dur)
+                )
+                backup_conn.commit()
+                backup_conn.close()
+                print("Backup successfully.")
+            except Exception as e:
+                print("Exception while inserting into Backup YugabyteDB")
+                print(e)
             conn.commit()
             conn.close()
             return jsonify({'status': 'success'}), 201
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            # using backup database
+            print("Exception while inserting into Main YugabyteDB")
+            print(e)
+            try:
+                backup_conn = get_backup_db_connection()
+                backup_cur = backup_conn.cursor()
+                backup_cur.execute(
+                    'INSERT INTO Log (user_id, type, time, duration) VALUES (%s, %s, %s, %s)',
+                    (uid, typ, tm, dur)
+                )
+                backup_conn.commit()
+                backup_conn.close()
+            except Exception as e:
+                print("Exception while inserting into Backup YugabyteDB")
+                print(e)
+                return jsonify({'error': str(e)}), 500
+
+# finish backup database
 
 
 @app.route('/salary/logs', methods=['GET'])  # 查詢日誌
@@ -298,8 +394,27 @@ def get_salary_logs():
         ]
         return jsonify(logs), 200
     except Exception as e:
-        app.logger.error(f"Log query failed: {str(e)}")
-        return jsonify({"error": "Database error"}), 500
+        # using backup database
+        print("Exception while querying from Main YugabyteDB")
+        print(e)
+        try:
+            backup_conn = get_backup_db_connection()
+            backup_cur = backup_conn.cursor()
+            backup_cur.execute(command, (start_time, end_time))
+            rows = backup_cur.fetchall()
+
+            # convert rows to list of dicts
+            logs = [
+                {'user_id': r[0], 'type': r[1], 'time': r[2], 'duration': r[3]}
+                for r in rows
+            ]
+            return jsonify(logs), 200
+        except Exception as e:
+            print("Exception while querying from Backup YugabyteDB")
+            print(e)
+            return jsonify({"error": "Database error"}), 500
+
+# finish backup database
 
 
 @app.route('/salary/update', methods=['POST'])  # 新增或更新薪資
@@ -323,27 +438,78 @@ def update_salary():
             'SELECT user_id, salary FROM salary WHERE user_id = %s', (user_id,))
 
         result = curs.fetchall()
-        print(result)
         curss = conn.cursor()
         if result:
             # update existing record
             curss.execute(
                 'UPDATE salary SET salary = %s WHERE user_id = %s', (salary, user_id,))
+            # backup database
+            try:
+                backup_conn = get_backup_db_connection()
+                backup_cur = backup_conn.cursor()
+                backup_cur.execute(
+                    'UPDATE salary SET salary = %s WHERE user_id = %s', (salary, user_id,))
+                backup_conn.commit()
+                backup_conn.close()
+                print("Backup successfully.")
+            except Exception as e:
+                print("Exception while updating in Backup YugabyteDB")
+                print(e)
         else:
             # insert new record
             curss.execute(
                 'INSERT INTO salary (user_id, salary) VALUES (%s, %s)', (user_id, salary,))
+            # backup database
+            try:
+                backup_conn = get_backup_db_connection()
+                backup_cur = backup_conn.cursor()
+                backup_cur.execute(
+                    'INSERT INTO salary (user_id, salary) VALUES (%s, %s)', (user_id, salary,))
+                backup_conn.commit()
+                backup_conn.close()
+                print("Backup successfully.")
+            except Exception as e:
+                print("Exception while updating in Backup YugabyteDB")
+                print(e)
 
         conn.commit()
         return jsonify({"message": "Salary updated successfully"}), 200
 
     except Exception as e:
-        conn.rollback()
-        app.logger.error(f"Update failed: {str(e)}")
-        return jsonify({"error": "Database error"}), 500
+        # using backup database
+        print("Exception while updating in Main YugabyteDB")
+        print(e)
+        try:
+            backup_conn = get_backup_db_connection()
+            backup_cur = backup_conn.cursor()
+            # update salary if user_id exists, otherwise insert new record
+            backup_cur.execute(
+                'SELECT user_id, salary FROM salary WHERE user_id = %s', (user_id,))
+
+            result = backup_cur.fetchall()
+            curss = backup_conn.cursor()
+            if result:
+                # update existing record
+                curss.execute(
+                    'UPDATE salary SET salary = %s WHERE user_id = %s', (salary, user_id,))
+                backup_conn.commit()
+                backup_conn.close()
+                print("Backup successfully.")
+            else:
+                # insert new record
+                curss.execute(
+                    'INSERT INTO salary (user_id, salary) VALUES (%s, %s)', (user_id, salary,))
+                backup_conn.commit()
+                backup_conn.close()
+                print("Backup successfully.")
+        except Exception as e:
+            print("Exception while updating in Backup YugabyteDB")
+            print(e)
+            return jsonify({"error": "Database error"}), 500
     finally:
-        if conn:
-            conn.close()
+        conn.close()
+
+# finish backup database
 
 
 @app.route('/salary/find', methods=['GET'])  # 查詢薪資
@@ -363,11 +529,29 @@ def get_user_salary():
         else:
             return jsonify({"error": "User not found"}), 404
     except Exception as e:
-        app.logger.error(f"Query failed: {str(e)}")
-        return jsonify({"error": "Database error"}), 500
+        # using backup database
+        print("Exception while querying from Main YugabyteDB")
+        print(e)
+        try:
+            backup_conn = get_backup_db_connection()
+            backup_cur = backup_conn.cursor()
+            backup_cur.execute(
+                'SELECT user_id, salary FROM salary WHERE user_id = %s', (user_id,))
+            result = backup_cur.fetchone()
+
+            if result:
+                return jsonify({"user_id": result[0], "salary": result[1]}), 200
+            else:
+                return jsonify({"error": "User not found"}), 404
+        except Exception as e:
+            print("Exception while querying from Backup YugabyteDB")
+            print(e)
+            return jsonify({"error": "Database error"}), 500
     finally:
         if conn:
             conn.close()
+
+# finish backup database
 
 
 def verify_boss_access(func):
@@ -392,7 +576,14 @@ def verify_boss_access(func):
         conn = get_db_connection()
 
         if not conn:
-            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+            # using backup database
+            try:
+                conn = get_backup_db_connection()
+            except Exception as e:
+                print("Exception while connecting to Backup YugabyteDB")
+                print(e)
+                return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+            print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
 
         try:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
@@ -417,6 +608,8 @@ def get_subordinates(boss_id, user_id, cursor):
     result = cursor.fetchone()
     return result is not None
 
+# finish backup database
+
 
 @app.route('/boss/subordinate_record', methods=['GET'])
 @verify_boss_access
@@ -427,7 +620,14 @@ def get_subordinate_record():
     """
     conn = get_db_connection()
     if not conn:
-        return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+        # using backup database
+        try:
+            conn = get_backup_db_connection()
+        except Exception as e:
+            print("Exception while connecting to Backup YugabyteDB")
+            print(e)
+            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
 
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
@@ -470,6 +670,8 @@ def get_subordinate_record():
     finally:
         conn.close()
 
+# finish backup database
+
 
 @app.route('/boss/subordinate_salary', methods=['GET'])
 @verify_boss_access
@@ -477,8 +679,14 @@ def subordinate_salary():
     """Verify if an employee is a subordinate of the requesting boss"""
     conn = get_db_connection()
     if not conn:
-        return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-
+        # using backup database
+        try:
+            conn = get_backup_db_connection()
+        except Exception as e:
+            print("Exception while connecting to Backup YugabyteDB")
+            print(e)
+            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             boss_id = request.headers.get('X-User-ID')
@@ -513,6 +721,8 @@ def subordinate_salary():
     finally:
         conn.close()
 
+# finish backup database
+
 
 @app.route('/employee/register', methods=['POST'])
 def employee_register():
@@ -538,8 +748,14 @@ def employee_register():
 
     conn = get_db_connection()
     if not conn:
-        return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-
+        # using backup database
+        try:
+            conn = get_backup_db_connection()
+        except Exception as e:
+            print("Exception while connecting to Backup YugabyteDB")
+            print(e)
+            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
     try:
         with conn.cursor() as cursor:
             # 檢查用戶是否已存在
@@ -579,6 +795,42 @@ def employee_register():
             cursor.execute(insert_query, (account, 10000))
             conn.commit()
 
+            # backup database
+            try:
+                backup_conn = get_backup_db_connection()
+                backup_cursor = backup_conn.cursor()
+
+                # 新增用戶
+                insert_query = """
+                    INSERT INTO Author (user_id, access_token, refresh_token, created_at)
+                    VALUES (%s, %s, %s, %s)
+                """
+                backup_cursor.execute(insert_query, (account, access_token,
+                                                     refresh_token, created_at))
+                backup_conn.commit()
+
+                # 新增員工帳號
+                insert_query = """
+                    INSERT INTO employeeaccount (account, password, boss_id)
+                    VALUES (%s, %s, %s)
+                """
+                backup_cursor.execute(insert_query,
+                                      (account, password, boss_id))
+                backup_conn.commit()
+
+                # 新增員工薪資
+                insert_query = """
+                    INSERT INTO salary (user_id, salary)
+                    VALUES (%s, %s)
+                """
+                backup_cursor.execute(insert_query, (account, 10000))
+                backup_conn.commit()
+                backup_conn.close()
+                print("Backup successfully.")
+            except Exception as e:
+                print("Exception while inserting into Backup YugabyteDB")
+                print(e)
+
             return jsonify({
                 'status': 'success',
                 'message': '註冊成功',
@@ -599,6 +851,8 @@ def employee_register():
 
 # 驗證token
 
+# no need to backup database
+
 
 def verify_employee_token(header):
     """驗證用戶token"""
@@ -617,8 +871,10 @@ def verify_employee_token(header):
         return jsonify({'status': 'error', 'message': '無效的認證'}), 401
     return jsonify({'status': 'success', 'message': '驗證成功'}), 200
 
-
+# finish backup database
 # 查詢打卡記錄
+
+
 @app.route('/employee/records', methods=['GET'])
 def get_employee_records():
     """
@@ -647,8 +903,14 @@ def get_employee_records():
 
     conn = get_db_connection()
     if not conn:
-        return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-
+        # using backup database
+        try:
+            conn = get_backup_db_connection()
+        except Exception as e:
+            print("Exception while connecting to Backup YugabyteDB")
+            print(e)
+            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             query = """
@@ -678,8 +940,10 @@ def get_employee_records():
     finally:
         conn.close()
 
-
+# finish backup database
 # 查詢薪資記錄
+
+
 @app.route('/employee/salary', methods=['GET'])
 def get_employee_salary():
     """
@@ -706,8 +970,14 @@ def get_employee_salary():
 
     conn = get_db_connection()
     if not conn:
-        return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-
+        # using backup database
+        try:
+            conn = get_backup_db_connection()
+        except Exception as e:
+            print("Exception while connecting to Backup YugabyteDB")
+            print(e)
+            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             query = """

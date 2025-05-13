@@ -24,12 +24,30 @@ CONFIG = {
     'sslRootCert': ''
 }
 
+
+# read host name from backup_url.json file
+with open('access_control_system/backup_url.json') as f:
+    data = json.load(f)
+    BACKUPHOST = data['host']
+    BACKUPPORT = data['port']
+
+
+def get_backup_db_connection():
+    return psycopg2.connect(
+        host=BACKUPHOST,
+        port=BACKUPPORT,
+        database=CONFIG['dbName'],
+        user=CONFIG['dbUser'],
+        password=CONFIG['dbPassword'],
+        sslrootcert=CONFIG['sslRootCert'])
+
 # create authorization table
 
 
-def create_authorization_table(conn):
+def create_authorization_table(conn, backup_conn):
     # drop the table if it exists
     drop_tables(conn)
+    drop_tables(backup_conn)
 
     # Create the authorization table if it doesn't exist
     create_table_query = """
@@ -41,6 +59,7 @@ def create_authorization_table(conn):
         )
     """
     create_table(conn, create_table_query)
+    create_table(backup_conn, create_table_query)
 
     print("Author table created successfully.")
 
@@ -51,11 +70,11 @@ def create_authorization_table(conn):
     """
     RECORD["authorization"] = []
     insert_authorization_record(
-        conn, create_sample_authorization_record("Jason"), insert_query)
+        conn, backup_conn, create_sample_authorization_record("Jason"), insert_query)
     insert_authorization_record(
-        conn, create_sample_authorization_record("Sally"), insert_query)
+        conn, backup_conn, create_sample_authorization_record("Sally"), insert_query)
     insert_authorization_record(
-        conn, create_sample_authorization_record("John"), insert_query)
+        conn, backup_conn, create_sample_authorization_record("John"), insert_query)
 
 
 def create_sample_authorization_record(user_id):
@@ -95,7 +114,7 @@ def drop_tables(yb):
         exit(1)
 
 
-def insert_authorization_record(yb, record, insert_query):
+def insert_authorization_record(yb, backup_conn, record, insert_query):
     try:
         with yb.cursor() as yb_cursor:
             yb_cursor.execute(insert_query, (record['user_id'], record['access_token'],
@@ -105,10 +124,19 @@ def insert_authorization_record(yb, record, insert_query):
         print("Exception while inserting record into authorization table")
         print(e)
         exit(1)
+    try:
+        with backup_conn.cursor() as yb_cursor:
+            yb_cursor.execute(insert_query, (record['user_id'], record['access_token'],
+                                             record['refresh_token'], record['created_at']))
+        backup_conn.commit()
+    except Exception as e:
+        print("Exception while inserting record into authorization table")
+        print(e)
+        exit(1)
     print(record)
 
 
-def create_record_table(conn):
+def create_record_table(conn, backup_conn):
     # Create the record table if it doesn't exist
     create_table_query = """
         CREATE TABLE IF NOT EXISTS Record (
@@ -118,6 +146,7 @@ def create_record_table(conn):
         )
     """
     create_table(conn, create_table_query)
+    create_table(backup_conn, create_table_query)
 
     print("Record table created successfully.")
 
@@ -128,9 +157,9 @@ def create_record_table(conn):
     """
     RECORD["record"] = []
     insert_record_record(
-        conn, create_record_sample_record("Jason", "i"), insert_query)
+        conn, backup_conn, create_record_sample_record("Jason", "i"), insert_query)
     insert_record_record(
-        conn, create_record_sample_record("Jason", "o"), insert_query)
+        conn, backup_conn, create_record_sample_record("Jason", "o"), insert_query)
 
 
 def create_record_sample_record(user_id, type):
@@ -146,7 +175,7 @@ def create_record_sample_record(user_id, type):
     }
 
 
-def insert_record_record(yb, record, insert_query):
+def insert_record_record(yb, backup_conn, record, insert_query):
     try:
         with yb.cursor() as yb_cursor:
             yb_cursor.execute(insert_query, (record['user_id'], record['type'],
@@ -156,10 +185,19 @@ def insert_record_record(yb, record, insert_query):
         print("Exception while inserting record into authorization table")
         print(e)
         exit(1)
+    try:
+        with backup_conn.cursor() as yb_cursor:
+            yb_cursor.execute(insert_query, (record['user_id'], record['type'],
+                                             record['time']))
+        backup_conn.commit()
+    except Exception as e:
+        print("Exception while inserting record into authorization table")
+        print(e)
+        exit(1)
     print(record)
 
 
-def create_log_table(conn):
+def create_log_table(conn, backup_conn):
     # Create the record table if it doesn't exist
     create_table_query = """
         CREATE TABLE IF NOT EXISTS Log (
@@ -170,6 +208,7 @@ def create_log_table(conn):
         )
     """
     create_table(conn, create_table_query)
+    create_table(backup_conn, create_table_query)
 
     print("Log table created successfully.")
 
@@ -180,11 +219,11 @@ def create_log_table(conn):
     """
     RECORD["log"] = []
     insert_log_record(
-        conn, create_log_sample_record("Jason", "absent", 3600*8), insert_query)
+        conn, backup_conn, create_log_sample_record("Jason", "absent", 3600*8), insert_query)
     insert_log_record(
-        conn, create_log_sample_record("Jason", "late", 3600), insert_query)
+        conn, backup_conn, create_log_sample_record("Jason", "late", 3600), insert_query)
     insert_log_record(
-        conn, create_log_sample_record("Jason", "overtime", 7200), insert_query)
+        conn, backup_conn, create_log_sample_record("Jason", "overtime", 7200), insert_query)
 
 
 def create_log_sample_record(user_id, type, duration):
@@ -203,7 +242,7 @@ def create_log_sample_record(user_id, type, duration):
     }
 
 
-def insert_log_record(yb, record, insert_query):
+def insert_log_record(yb, backup_conn, record, insert_query):
     try:
         with yb.cursor() as yb_cursor:
             yb_cursor.execute(insert_query, (record['user_id'], record['type'],
@@ -213,10 +252,19 @@ def insert_log_record(yb, record, insert_query):
         print("Exception while inserting record into authorization table")
         print(e)
         exit(1)
+    try:
+        with backup_conn.cursor() as yb_cursor:
+            yb_cursor.execute(insert_query, (record['user_id'], record['type'],
+                                             record['time'], record['duration']))
+        backup_conn.commit()
+    except Exception as e:
+        print("Exception while inserting record into authorization table")
+        print(e)
+        exit(1)
     print(record)
 
 
-def create_salary_table(conn):
+def create_salary_table(conn, backup_conn):
     # Create the record table if it doesn't exist
     create_table_query = """
         CREATE TABLE IF NOT EXISTS Salary (
@@ -225,6 +273,7 @@ def create_salary_table(conn):
         )
     """
     create_table(conn, create_table_query)
+    create_table(backup_conn, create_table_query)
 
     print("Salary table created successfully.")
 
@@ -235,7 +284,7 @@ def create_salary_table(conn):
     """
     RECORD["salary"] = []
     insert_salary_record(
-        conn, create_salary_sample_record("Jason"), insert_query)
+        conn, backup_conn, create_salary_sample_record("Jason"), insert_query)
 
 
 def create_salary_sample_record(user_id):
@@ -250,7 +299,7 @@ def create_salary_sample_record(user_id):
     }
 
 
-def insert_salary_record(yb, record, insert_query):
+def insert_salary_record(yb, backup_conn, record, insert_query):
     try:
         with yb.cursor() as yb_cursor:
             yb_cursor.execute(
@@ -260,10 +309,19 @@ def insert_salary_record(yb, record, insert_query):
         print("Exception while inserting record into Log table")
         print(e)
         exit(1)
+    try:
+        with backup_conn.cursor() as yb_cursor:
+            yb_cursor.execute(
+                insert_query, (record['user_id'], record['salary']))
+        backup_conn.commit()
+    except Exception as e:
+        print("Exception while inserting record into Log table")
+        print(e)
+        exit(1)
     print(record)
 
 
-def create_employee_account_table(conn):
+def create_employee_account_table(conn, backup_conn):
     # Create the record table if it doesn't exist
     create_table_query = """
         CREATE TABLE IF NOT EXISTS EmployeeAccount (
@@ -273,6 +331,7 @@ def create_employee_account_table(conn):
         )
     """
     create_table(conn, create_table_query)
+    create_table(backup_conn, create_table_query)
 
     print("EmployeeAccount table created successfully.")
 
@@ -283,7 +342,7 @@ def create_employee_account_table(conn):
     """
     RECORD["employee_account"] = []
     insert_employee_account_record(
-        conn, create_employee_account_sample_record("Jason", "Sally"), insert_query)
+        conn, backup_conn, create_employee_account_sample_record("Jason", "Sally"), insert_query)
 
 
 def create_employee_account_sample_record(user_id, boss_id):
@@ -300,7 +359,7 @@ def create_employee_account_sample_record(user_id, boss_id):
     }
 
 
-def insert_employee_account_record(yb, record, insert_query):
+def insert_employee_account_record(yb, backup_conn, record, insert_query):
     try:
         with yb.cursor() as yb_cursor:
             yb_cursor.execute(
@@ -310,10 +369,19 @@ def insert_employee_account_record(yb, record, insert_query):
         print("Exception while inserting record into EmployeeAccount table")
         print(e)
         exit(1)
+    try:
+        with backup_conn.cursor() as yb_cursor:
+            yb_cursor.execute(
+                insert_query, (record['account'], record['password'], record['boss_id']))
+        backup_conn.commit()
+    except Exception as e:
+        print("Exception while inserting record into EmployeeAccount table")
+        print(e)
+        exit(1)
     print(record)
 
 
-def create_boss_account_table(conn):
+def create_boss_account_table(conn, backup_conn):
     # Create the record table if it doesn't exist
     create_table_query = """
         CREATE TABLE IF NOT EXISTS BossAccount (
@@ -322,6 +390,7 @@ def create_boss_account_table(conn):
         )
     """
     create_table(conn, create_table_query)
+    create_table(backup_conn, create_table_query)
 
     print("BossAccount table created successfully.")
 
@@ -332,9 +401,9 @@ def create_boss_account_table(conn):
     """
     RECORD["boss_account"] = []
     insert_boss_account_record(
-        conn, create_boss_account_sample_record("Sally"), insert_query)
+        conn, backup_conn, create_boss_account_sample_record("Sally"), insert_query)
     insert_boss_account_record(
-        conn, create_boss_account_sample_record("John"), insert_query)
+        conn, backup_conn, create_boss_account_sample_record("John"), insert_query)
 
 
 def create_boss_account_sample_record(user_id):
@@ -349,12 +418,21 @@ def create_boss_account_sample_record(user_id):
     }
 
 
-def insert_boss_account_record(yb, record, insert_query):
+def insert_boss_account_record(yb, backup_conn, record, insert_query):
     try:
         with yb.cursor() as yb_cursor:
             yb_cursor.execute(
                 insert_query, (record['account'], record['password']))
         yb.commit()
+    except Exception as e:
+        print("Exception while inserting record into BossAccount table")
+        print(e)
+        exit(1)
+    try:
+        with backup_conn.cursor() as yb_cursor:
+            yb_cursor.execute(
+                insert_query, (record['account'], record['password']))
+        backup_conn.commit()
     except Exception as e:
         print("Exception while inserting record into BossAccount table")
         print(e)
@@ -383,17 +461,26 @@ if __name__ == "__main__":
     except Exception as e:
         print("Exception while connecting to YugabyteDB")
         print(e)
+        exit(1)
+
+    try:
+        backup_conn = get_backup_db_connection()
+    except Exception as e:
+        print("Exception while connecting to backup YugabyteDB")
+        print(e)
+        exit(1)
 
     print(">>>> Successfully connected to YugabyteDB!")
-    create_authorization_table(conn)
-    create_record_table(conn)
-    create_log_table(conn)
-    create_salary_table(conn)
-    create_employee_account_table(conn)
-    create_boss_account_table(conn)
+    create_authorization_table(conn, backup_conn)  # finish backup
+    create_record_table(conn, backup_conn)  # finish backup
+    create_log_table(conn, backup_conn)  # finish backup
+    create_salary_table(conn, backup_conn)  # finish backup
+    create_employee_account_table(conn, backup_conn)    # finish backup
+    create_boss_account_table(conn, backup_conn)
     print("Tables created successfully.")
     # Close the connection
     conn.close()
+    backup_conn.close()
     # write the records to a json file
     with open('access_control_system/sample_record.json', 'w') as f:
         # clean the file

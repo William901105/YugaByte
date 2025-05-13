@@ -1,59 +1,75 @@
 {
     "author": [
         {
-            "user_id": "Sally",
-            "access_token": "161c61c5b0254f9f41b0de7b86115d28b407a392c8c016e472f2c504f33a11bd",
-            "refresh_token": "3eebc4e6b78723c41c2ef745833717d07c79bb921155e6c44e42c76addcfe173",
-            "created_at": 1747121179.3243752
+            "user_id": "Kevin",
+            "access_token": "0e4dd66217fc8d2e298b78c8cd9392870dcd065d0ff675d0edff5bcd227837e9",
+            "refresh_token": "87c48be138657ed5c2107ff638a646dee87847a3f3928ec8fee0a8f65e191b6f",
+            "created_at": 1747130148.432823
         },
         {
             "user_id": "Jason",
-            "access_token": "7fa8a6e9fde2f4e1dfe6fb029af47c9633d4b7a616a42c3b2889c5226a20238d",
-            "refresh_token": "56e4d47b8bbbc0e2c4b9c80c0a21d10cb64d618d36a970706edbb14b4d9baca8",
-            "created_at": 1747121178.7619736
+            "access_token": "61c51caeb61edbcbc911485597a6178a013e4c482160f15c8db22ecdc756ddcd",
+            "refresh_token": "c3ce05f03a63a73425d2d34baaae7f63ff029b670811494e0b07eeb086d423e8",
+            "created_at": 1747129119.5365446
         },
         {
             "user_id": "John",
             "access_token": "a8cfcd74832004951b4408cdb0a5dbcd8c7e52d43f7fe244bf720582e05241da",
             "refresh_token": "93bab15b9bb13ad3291ed6c74ea7fbc870ccce7722fe823f2fb58a049df67940",
-            "created_at": 1747121179.8561969
+            "created_at": 1747126854.8788137
+        },
+        {
+            "user_id": "Sally",
+            "access_token": "161c61c5b0254f9f41b0de7b86115d28b407a392c8c016e472f2c504f33a11bd",
+            "refresh_token": "3eebc4e6b78723c41c2ef745833717d07c79bb921155e6c44e42c76addcfe173",
+            "created_at": 1747126853.8025398
         }
     ],
     "record": [
         {
             "user_id": "Jason",
             "type": "i",
-            "time": 1747121181.0052907
+            "time": 1747126857.9755504
         },
         {
             "user_id": "Jason",
             "type": "o",
-            "time": 1747121181.547091
+            "time": 1747126859.0429235
         }
     ],
     "log": [
         {
             "user_id": "Jason",
-            "type": "absent",
-            "time": 1747121183.3724241,
-            "duration": 28800.0
+            "type": "late",
+            "time": 1747126862.4526868,
+            "duration": 3600.0
         },
         {
             "user_id": "Jason",
             "type": "overtime",
-            "time": 1747121186.3355975,
+            "time": 1747126863.493728,
             "duration": 7200.0
         },
         {
             "user_id": "Jason",
             "type": "late",
-            "time": 1747121185.0277314,
-            "duration": 3600.0
+            "time": 1747126860.0,
+            "duration": 360.0
+        },
+        {
+            "user_id": "Jason",
+            "type": "absent",
+            "time": 1747126861.4332578,
+            "duration": 28800.0
         }
     ],
     "salary": [
         {
             "user_id": "Jason",
+            "salary": 15000.0
+        },
+        {
+            "user_id": "Kevin",
             "salary": 10000.0
         }
     ],
@@ -62,16 +78,21 @@
             "account": "Jason",
             "password": "Jason",
             "boss_id": "Sally"
+        },
+        {
+            "account": "Kevin",
+            "password": "Kevin",
+            "boss_id": "John"
         }
     ],
     "boss_account": [
         {
-            "account": "John",
-            "password": "John"
-        },
-        {
             "account": "Sally",
             "password": "Sally"
+        },
+        {
+            "account": "John",
+            "password": "John"
         }
     ]
 }

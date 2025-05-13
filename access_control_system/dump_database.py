@@ -2,6 +2,7 @@ import psycopg2
 import json
 
 # read host name from host.json file
+# backup_url
 with open('access_control_system/url.json') as f:
     data = json.load(f)
     HOST = data['host']
