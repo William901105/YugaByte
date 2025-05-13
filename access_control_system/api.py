@@ -123,51 +123,36 @@ def update_token(refresh_token, user_id):  # update the token function
     # Connect to the database
     try:
         conn = get_db_connection()
+        print(">>>> Successfully connected to YugabyteDB!")
+        # Create a cursor object using the connection
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        # check if the refresh token is valid for the given user ID
+        query = """
+            SELECT * FROM Author WHERE refresh_token = %s AND user_id = %s
+        """
+        cursor.execute(query, (refresh_token, user_id))
 
-    except Exception as e:
-        print("Exception while connecting to Main YugabyteDB")
-        try:
-            conn = get_backup_db_connection()
-            FLAG = True
-        except Exception as e:
-            print("Exception while connecting to Backup YugabyteDB")
-            print(e)
+        # Fetch the result of the query
+        result = cursor.fetchone()
+        # check if the result is none
+        if result is None:
+            print("Refresh token is invalid.")
+            # Close the cursor and connection
+            cursor.close()
+            conn.close()
             return None
 
-    print(">>>> Successfully connected to YugabyteDB!")
+        # create a new access token and refresh token
+        new_access_token = hashlib.sha256(
+            (str(result[1]) + str(time.time())).encode()).hexdigest()
+        new_refresh_token = hashlib.sha256(
+            (str(result[2]) + str(time.time())).encode()).hexdigest()
 
-    # Create a cursor object using the connection
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
-    # check if the refresh token is valid for the given user ID
-    query = """
-        SELECT * FROM Author WHERE refresh_token = %s AND user_id = %s
-    """
-    cursor.execute(query, (refresh_token, user_id))
-
-    # Fetch the result of the query
-    result = cursor.fetchone()
-
-    # check if the result is none
-    if result is None:
-        print("Refresh token is invalid.")
-        # Close the cursor and connection
-        cursor.close()
-        conn.close()
-        return None
-
-    # create a new access token and refresh token
-    new_access_token = hashlib.sha256(
-        (str(result[1]) + str(time.time())).encode()).hexdigest()
-    new_refresh_token = hashlib.sha256(
-        (str(result[2]) + str(time.time())).encode()).hexdigest()
-
-    # update the access token and refresh token in the database
-    update_query = """
-        UPDATE Author SET access_token = %s, refresh_token = %s, created_at = %s WHERE user_id = %s
-    """
-    # update in the backup database
-    if not FLAG:
+        # update the access token and refresh token in the database
+        update_query = """
+            UPDATE Author SET access_token = %s, refresh_token = %s, created_at = %s WHERE user_id = %s
+        """
+        # update in the backup database
         try:
             backup_conn = get_backup_db_connection()
             backup_cursor = backup_conn.cursor(
@@ -182,15 +167,56 @@ def update_token(refresh_token, user_id):  # update the token function
             print("Exception while updating in Backup YugabyteDB")
             print(e)
 
-    cursor.execute(update_query, (new_access_token,
-                   new_refresh_token, time.time(), user_id))
-    conn.commit()
+        cursor.execute(update_query, (new_access_token,
+                                      new_refresh_token, time.time(), user_id))
+        conn.commit()
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+        print("Access token and refresh token updated successfully.")
+        return {"new_access_token": new_access_token, "new_refresh_token": new_refresh_token}
 
-    # Close the cursor and connection
-    cursor.close()
-    conn.close()
-    print("Access token and refresh token updated successfully.")
-    return {"new_access_token": new_access_token, "new_refresh_token": new_refresh_token}
+    except Exception as e:
+        conn = get_backup_db_connection()
+        print(">>>> Successfully connected to YugabyteDB!")
+        # Create a cursor object using the connection
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        # check if the refresh token is valid for the given user ID
+        query = """
+            SELECT * FROM Author WHERE refresh_token = %s AND user_id = %s
+        """
+        cursor.execute(query, (refresh_token, user_id))
+
+        # Fetch the result of the query
+        result = cursor.fetchone()
+        # check if the result is none
+        if result is None:
+            print("Refresh token is invalid.")
+            # Close the cursor and connection
+            cursor.close()
+            conn.close()
+            return None
+
+        # create a new access token and refresh token
+        new_access_token = hashlib.sha256(
+            (str(result[1]) + str(time.time())).encode()).hexdigest()
+        new_refresh_token = hashlib.sha256(
+            (str(result[2]) + str(time.time())).encode()).hexdigest()
+
+        # update the access token and refresh token in the database
+        update_query = """
+            UPDATE Author SET access_token = %s, refresh_token = %s, created_at = %s WHERE user_id = %s
+        """
+        # update in the backup database
+
+        cursor.execute(update_query, (new_access_token,
+                                      new_refresh_token, time.time(), user_id))
+        conn.commit()
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+        print("Access token and refresh token updated successfully.")
+        return {"new_access_token": new_access_token, "new_refresh_token": new_refresh_token}
 
 
 # run the app
