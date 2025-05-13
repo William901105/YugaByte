@@ -13,79 +13,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打卡記錄</title>
+    <title>打卡記錄 - 員工系統</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>打卡記錄</h1>
-        <table id="recordsTable">
-            <thead>
-                <tr>
-                    <th>日期</th>
-                    <th>類型</th>
-                    <th>時間</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- 動態插入記錄 -->
-            </tbody>
-        </table>
-        <p id="noRecordsMessage" style="display: none; text-align: center; color: gray;">目前沒有打卡記錄。</p>
-        <button id="logoutButton">登出</button>
+        <div class="card">
+            <h1>打卡記錄查詢</h1>
+            
+            <form id="dateRangeForm" class="date-range-form">
+                <div class="form-group">
+                    <label for="startDate">開始日期</label>
+                    <input type="date" id="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="endDate">結束日期</label>
+                    <input type="date" id="endDate" required>
+                </div>
+                <button type="submit" class="search-btn">查詢</button>
+            </form>
+            
+            <div id="loadingIndicator" class="loading">載入中...</div>
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            
+            <div class="table-container">
+                <table id="recordsTable" class="records-table">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>類型</th>
+                            <th>時間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 動態插入記錄 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <p id="noRecordsMessage" class="no-data-message" style="display: none;">目前沒有打卡記錄。</p>
+            
+            <div class="navigation">
+                <a href="menu.html" class="back-link">返回選單</a>
+                <button id="logoutButton" class="logout-btn">登出</button>
+            </div>
+        </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', async function () {
-            const userId = localStorage.getItem('user_id');
-            const accessToken = localStorage.getItem('access_token');
-
-            if (!userId || !accessToken) {
-                alert('未登入，請重新登入');
-                window.location.href = 'index.html';
-                return;
-            }
-
-            try {
-                const response = await fetch(`http://localhost:5000/api/records?user_id=${userId}&access_token=${accessToken}`);
-                const data = await response.json();
-
-                if (data.status !== 'success') {
-                    throw new Error(data.message || '無法取得打卡記錄');
-                }
-
-                const recordsTableBody = document.querySelector('#recordsTable tbody');
-                if (data.data.length === 0) {
-                    document.getElementById('noRecordsMessage').style.display = 'block';
-                } else {
-                    data.data.forEach(record => {
-                        const row = document.createElement('tr');
-
-                        const dateCell = document.createElement('td');
-                        const typeCell = document.createElement('td');
-                        const timeCell = document.createElement('td');
-
-                        const date = new Date(record.time * 1000); // 假設時間戳為秒
-                        dateCell.textContent = date.toLocaleDateString('zh-TW');
-                        typeCell.textContent = record.type;
-                        timeCell.textContent = date.toLocaleTimeString('zh-TW');
-
-                        row.appendChild(dateCell);
-                        row.appendChild(typeCell);
-                        row.appendChild(timeCell);
-
-                        recordsTableBody.appendChild(row);
-                    });
-                }
-            } catch (err) {
-                alert(`無法取得打卡記錄：${err.message}`);
-                console.error(err);
-            }
-
-            document.getElementById('logoutButton').addEventListener('click', function () {
-                localStorage.clear();
-                window.location.href = 'index.html';
-            });
-        });
-    </script>
+    <script src="records.js"></script>
 </body>
 </html>

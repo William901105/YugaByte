@@ -1006,6 +1006,61 @@ def get_employee_salary():
         conn.close()
 
 
+@app.route('/api/login', methods=['POST'])
+def login():
+    """
+    員工登入 API
+    需要提供:
+    - account: 員工帳號
+    - password: 員工密碼
+    """
+    data = request.get_json()
+    account = data.get('account')
+    password = data.get('password')
+    
+    if not account or not password:
+        return jsonify({'status': 'error', 'message': '缺少必要參數'}), 400
+    
+    conn = get_db_connection()
+    if not conn:
+        try:
+            conn = get_backup_db_connection()
+        except Exception as e:
+            print("Exception while connecting to Backup YugabyteDB")
+            print(e)
+            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+    
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            # 檢查用戶是否存在
+            query = "SELECT * FROM employeeaccount WHERE account = %s AND password = %s"
+            cursor.execute(query, (account, password))
+            user = cursor.fetchone()
+            
+            if not user:
+                return jsonify({'status': 'error', 'message': '帳號或密碼錯誤'}), 401
+            
+            # 生成 token
+            access_token = hashlib.sha256(str(account + str(time.time())).encode()).hexdigest()
+            refresh_token = hashlib.sha256(str(account + "refresh" + str(time.time())).encode()).hexdigest()
+            
+            return jsonify({
+                'status': 'success',
+                'message': '登入成功',
+                'data': {
+                    'user_id': account,
+                    'access_token': access_token,
+                    'refresh_token': refresh_token,
+                    'role': 'employee'
+                }
+            }), 200
+                
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'登入失敗: {str(e)}'}), 500
+    finally:
+        conn.close()
+
+
 # test
 if __name__ == "__main__":
     # run the app on port 5000

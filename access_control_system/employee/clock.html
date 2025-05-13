@@ -13,74 +13,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打卡</title>
+    <title>打卡 - 員工系統</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>打卡</h1>
-        <button id="clockInButton">上班打卡</button>
-        <button id="clockOutButton">下班打卡</button>
-        <p id="clockResult"></p>
-        <button id="retryButton" style="display: none;">重新嘗試</button>
-        <button id="logoutButton">登出</button>
-    </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const userId = localStorage.getItem('user_id');
-            const accessToken = localStorage.getItem('access_token');
-
-            if (!userId || !accessToken) {
-                alert('未登入，請重新登入');
-                window.location.href = 'index.html';
-                return;
-            }
-
-            const clockResultElement = document.getElementById('clockResult');
-            const retryButton = document.getElementById('retryButton');
-            let lastClockType = null;
-
-            async function clock(type) {
-                try {
-                    const response = await fetch('http://localhost:5000/api/clock', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: userId, access_token: accessToken, type })
-                    });
-                    const data = await response.json();
-
-                    if (data.status !== 'success') {
-                        throw new Error(data.message || '打卡失敗');
-                    }
-
-                    // 顯示打卡成功訊息
-                    clockResultElement.textContent = `打卡成功：${data.data.type === 'i' ? '上班' : '下班'}，時間：${new Date(data.data.time * 1000).toLocaleString('zh-TW')}`;
-                    retryButton.style.display = 'none'; // 隱藏重新嘗試按鈕
-                } catch (err) {
-                    clockResultElement.textContent = `打卡失敗：${err.message}`;
-                    retryButton.style.display = 'block'; // 顯示重新嘗試按鈕
-                    lastClockType = type; // 儲存最後一次的打卡類型
-                    console.error(err);
-                }
-            }
-
-            // 綁定打卡按鈕事件
-            document.getElementById('clockInButton').addEventListener('click', () => clock('i'));
-            document.getElementById('clockOutButton').addEventListener('click', () => clock('o'));
-
-            // 綁定重新嘗試按鈕事件
-            retryButton.addEventListener('click', () => {
-                if (lastClockType) {
-                    clock(lastClockType);
-                }
-            });
-
-            // 登出功能
-            document.getElementById('logoutButton').addEventListener('click', function () {
-                localStorage.clear();
-                window.location.href = 'index.html';
-            });
-        });
-    </script>
+        <div class="card">
+            <h1>員工打卡</h1>
+            <div class="clock-display">
+                <p>目前時間：<span id="currentTime"></span></p>
+            </div>
+            
+            <div class="clock-buttons">
+                <button id="clockInButton" class="clock-btn clock-in">上班打卡</button>
+                <button id="clockOutButton" class="clock-btn clock-out">下班打卡</button>
+            </div>
+            
+            <div id="clockResult" class="clock-result"></div>
+            
+            <button id="retryButton" class="retry-btn" style="display: none;">重新嘗試</button>
+            
+            <div class="navigation">
+                <a href="menu.html" class="back-link">返回選單</a>
+                <button id="logoutButton" class="logout-btn">登出</button>
+            </div>
+        </div>
+    </div>    <script src="clock.js"></script>
 </body>
 </html>
