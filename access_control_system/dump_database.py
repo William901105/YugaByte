@@ -3,7 +3,7 @@ import json
 
 # read host name from host.json file
 # backup_url
-with open('access_control_system/url.json') as f:
+with open('access_control_system/backup_url.json') as f:
     data = json.load(f)
     HOST = data['host']
     PORT = data['port']

@@ -10,6 +10,9 @@ import hashlib
 from functools import wraps
 import requests
 
+
+FLAG = False  # set to True if you want to use the backup database
+
 # read host name from url.json file
 with open('access_control_system/url.json') as f:
     data = json.load(f)
@@ -125,6 +128,7 @@ def update_token(refresh_token, user_id):  # update the token function
         print("Exception while connecting to Main YugabyteDB")
         try:
             conn = get_backup_db_connection()
+            FLAG = True
         except Exception as e:
             print("Exception while connecting to Backup YugabyteDB")
             print(e)
@@ -163,19 +167,20 @@ def update_token(refresh_token, user_id):  # update the token function
         UPDATE Author SET access_token = %s, refresh_token = %s, created_at = %s WHERE user_id = %s
     """
     # update in the backup database
-    try:
-        backup_conn = get_backup_db_connection()
-        backup_cursor = backup_conn.cursor(
-            cursor_factory=psycopg2.extras.DictCursor)
-        backup_cursor.execute(update_query, (new_access_token,
-                                             new_refresh_token, time.time(), user_id))
-        backup_conn.commit()
-        backup_cursor.close()
-        backup_conn.close()
-        print("Backup successfully.")
-    except Exception as e:
-        print("Exception while updating in Backup YugabyteDB")
-        print(e)
+    if not FLAG:
+        try:
+            backup_conn = get_backup_db_connection()
+            backup_cursor = backup_conn.cursor(
+                cursor_factory=psycopg2.extras.DictCursor)
+            backup_cursor.execute(update_query, (new_access_token,
+                                                 new_refresh_token, time.time(), user_id))
+            backup_conn.commit()
+            backup_cursor.close()
+            backup_conn.close()
+            print("Backup successfully.")
+        except Exception as e:
+            print("Exception while updating in Backup YugabyteDB")
+            print(e)
 
     cursor.execute(update_query, (new_access_token,
                    new_refresh_token, time.time(), user_id))
@@ -194,6 +199,8 @@ CORS(app)
 
 
 # finish backup database
+
+
 @app.route('/authorization/authorize', methods=['GET'])
 def run_authorization():
     data = request.get_json()
@@ -210,6 +217,8 @@ def run_authorization():
 
 
 # finish backup database
+
+
 @app.route('/authorization/refreshToken', methods=['POST'])
 def run_update_token():
     data = request.get_json()
@@ -351,6 +360,8 @@ def record_handler():
                 )
                 backup_conn.commit()
                 backup_conn.close()
+                print("Write in Backup Database successfully.")
+                return jsonify({'status': 'success'}), 201
             except Exception as e:
                 print("Exception while inserting into Backup YugabyteDB")
                 print(e)
@@ -473,6 +484,7 @@ def update_salary():
                 print(e)
 
         conn.commit()
+        conn.close()
         return jsonify({"message": "Salary updated successfully"}), 200
 
     except Exception as e:
@@ -494,20 +506,21 @@ def update_salary():
                     'UPDATE salary SET salary = %s WHERE user_id = %s', (salary, user_id,))
                 backup_conn.commit()
                 backup_conn.close()
-                print("Backup successfully.")
+                print("Using Backup successfully.")
             else:
                 # insert new record
                 curss.execute(
                     'INSERT INTO salary (user_id, salary) VALUES (%s, %s)', (user_id, salary,))
                 backup_conn.commit()
                 backup_conn.close()
-                print("Backup successfully.")
+                print("Using Backup successfully.")
+            return jsonify({"message": "Salary updated successfully"}), 200
+
         except Exception as e:
             print("Exception while updating in Backup YugabyteDB")
             print(e)
             return jsonify({"error": "Database error"}), 500
-    finally:
-        conn.close()
+
 
 # finish backup database
 
@@ -540,16 +553,17 @@ def get_user_salary():
             result = backup_cur.fetchone()
 
             if result:
+                print("Using Backup successfully.")
                 return jsonify({"user_id": result[0], "salary": result[1]}), 200
             else:
+                print("Using Backup successfully.")
                 return jsonify({"error": "User not found"}), 404
+
         except Exception as e:
             print("Exception while querying from Backup YugabyteDB")
             print(e)
             return jsonify({"error": "Database error"}), 500
-    finally:
-        if conn:
-            conn.close()
+
 
 # finish backup database
 
@@ -573,19 +587,21 @@ def verify_boss_access(func):
             return jsonify({'status': 'error', 'message': '無效的認證'}), 401
 
         # Connect to the database
-        conn = get_db_connection()
-
-        if not conn:
-            # using backup database
-            try:
-                conn = get_backup_db_connection()
-            except Exception as e:
-                print("Exception while connecting to Backup YugabyteDB")
-                print(e)
-                return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-            print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
-
         try:
+            conn = get_db_connection()
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                # Verify if the user is a boss
+                cursor.execute("""
+                    SELECT * FROM bossaccount WHERE account = %s
+                """, (user_id,))
+                if not cursor.fetchone():
+                    return jsonify({'status': 'error', 'message': '無權限訪問'}), 403
+
+                return func(*args, **kwargs)
+        except Exception as e:
+            print("Exception while connecting to Main YugabyteDB")
+            print(e)
+            conn = get_backup_db_connection()
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
                 # Verify if the user is a boss
                 cursor.execute("""
@@ -618,19 +634,52 @@ def get_subordinate_record():
     BOSS API：查詢員工的打卡時間和薪資。
     可以選擇查詢所有員工或特定員工，並可指定時間範圍。
     """
-    conn = get_db_connection()
-    if not conn:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                boss_id = request.headers.get('X-User-ID')
+                data = request.get_json()
+                user_id = data.get('user_id')
+                start_time = data.get('start_time')
+                end_time = data.get('end_time')
+
+                # Get subordinates for the boss
+                subordinates = get_subordinates(boss_id, user_id, cursor)
+                if not subordinates:
+                    return jsonify({'status': 'error', 'message': '無下屬員工'}), 404
+
+                # check if start_time and end_time are valid
+                if not start_time or not end_time:
+                    return jsonify({'status': 'error', 'message': '請提供時間範圍'}), 400
+
+                if user_id:
+                    # 查詢特定員工的打卡紀錄
+                    cursor.execute("""
+                        SELECT user_id,type,time
+                        FROM Record
+                        WHERE user_id = %s AND time >= %s AND time <= %s
+                    """, (user_id, start_time, end_time,))
+                    employees = cursor.fetchall()
+                    result = []
+                    for employee in employees:
+                        employee_info = {
+                            'user_id': employee[0],
+                            'type': employee[1],
+                            'time': employee[2]
+                        }
+                        result.append(employee_info)
+                    return jsonify({"data": result}), 200
+
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': f'查詢失敗: {str(e)}'}), 500
+    except Exception as e:
+        print("Exception while connecting to Main YugabyteDB")
+        print(e)
         # using backup database
         try:
-            conn = get_backup_db_connection()
-        except Exception as e:
-            print("Exception while connecting to Backup YugabyteDB")
-            print(e)
-            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
-
-    try:
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            backup_conn = get_backup_db_connection()
+            backup_cursor = backup_conn.cursor()
             boss_id = request.headers.get('X-User-ID')
             data = request.get_json()
             user_id = data.get('user_id')
@@ -638,7 +687,7 @@ def get_subordinate_record():
             end_time = data.get('end_time')
 
             # Get subordinates for the boss
-            subordinates = get_subordinates(boss_id, user_id, cursor)
+            subordinates = get_subordinates(boss_id, user_id, backup_cursor)
             if not subordinates:
                 return jsonify({'status': 'error', 'message': '無下屬員工'}), 404
 
@@ -648,12 +697,12 @@ def get_subordinate_record():
 
             if user_id:
                 # 查詢特定員工的打卡紀錄
-                cursor.execute("""
-                    SELECT user_id,type,time
-                    FROM Record
-                    WHERE user_id = %s AND time >= %s AND time <= %s
-                """, (user_id, start_time, end_time,))
-                employees = cursor.fetchall()
+                backup_cursor.execute("""
+                        SELECT user_id,type,time
+                        FROM Record
+                        WHERE user_id = %s AND time >= %s AND time <= %s
+                    """, (user_id, start_time, end_time,))
+                employees = backup_cursor.fetchall()
                 result = []
                 for employee in employees:
                     employee_info = {
@@ -662,13 +711,14 @@ def get_subordinate_record():
                         'time': employee[2]
                     }
                     result.append(employee_info)
+                print("Using Backup Successfully")
                 return jsonify({"data": result}), 200
 
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': f'查詢失敗: {str(e)}'}), 500
+        except Exception as e:
+            print("Exception while connecting to Backup YugabyteDB")
+            print(e)
+            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
 
-    finally:
-        conn.close()
 
 # finish backup database
 
@@ -677,17 +727,8 @@ def get_subordinate_record():
 @verify_boss_access
 def subordinate_salary():
     """Verify if an employee is a subordinate of the requesting boss"""
-    conn = get_db_connection()
-    if not conn:
-        # using backup database
-        try:
-            conn = get_backup_db_connection()
-        except Exception as e:
-            print("Exception while connecting to Backup YugabyteDB")
-            print(e)
-            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
     try:
+        conn = get_db_connection()
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             boss_id = request.headers.get('X-User-ID')
             data = request.get_json()
@@ -716,6 +757,33 @@ def subordinate_salary():
                 return jsonify({"data": result}), 200
 
     except Exception as e:
+        conn = get_backup_db_connection()
+        cursor = conn.cursor()
+        boss_id = request.headers.get('X-User-ID')
+        data = request.get_json()
+        user_id = data.get('user_id')
+
+        # Get subordinates for the boss
+        subordinates = get_subordinates(boss_id, user_id, cursor)
+        if not subordinates:
+            return jsonify({'status': 'error', 'message': '無下屬員工'}), 404
+        if user_id:
+            # 查詢特定員工的Salary
+            cursor.execute("""
+                SELECT user_id,salary
+                FROM Salary
+                WHERE user_id = %s
+            """, (user_id, ))
+            salary = cursor.fetchall()
+            result = []
+            for s in salary:
+                s_info = {
+                    'user_id': s[0],
+                    'salary': s[1]
+                }
+            result.append(s_info)
+            print("Using Backup Successfully")
+            return jsonify({"data": result}), 200
         return jsonify({'status': 'error', 'message': f'查詢失敗: {str(e)}'}), 500
 
     finally:
@@ -746,17 +814,8 @@ def employee_register():
         str(account + "refresh").encode()).hexdigest()
     created_at = time.time()
 
-    conn = get_db_connection()
-    if not conn:
-        # using backup database
-        try:
-            conn = get_backup_db_connection()
-        except Exception as e:
-            print("Exception while connecting to Backup YugabyteDB")
-            print(e)
-            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
     try:
+        conn = get_db_connection()
         with conn.cursor() as cursor:
             # 檢查用戶是否已存在
             check_query = "SELECT * FROM employeeaccount WHERE account = %s"
@@ -844,7 +903,58 @@ def employee_register():
                 }
             }), 201
     except Exception as e:
-        conn.rollback()
+        conn = get_backup_db_connection()
+        with conn.cursor() as cursor:
+            # 檢查用戶是否已存在
+            check_query = "SELECT * FROM employeeaccount WHERE account = %s"
+            cursor.execute(check_query, (account,))
+            if cursor.fetchone():
+                return jsonify({'status': 'error', 'message': '用戶已存在'}), 409
+
+            # 檢查上司是否存在
+            check_boss_query = "SELECT * FROM bossaccount WHERE account = %s"
+            cursor.execute(check_boss_query, (boss_id,))
+            if not cursor.fetchone():
+                return jsonify({'status': 'error', 'message': '上司不存在'}), 404
+
+            # 新增用戶
+            insert_query = """
+                INSERT INTO Author (user_id, access_token, refresh_token, created_at)
+                VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(insert_query, (account, access_token,
+                           refresh_token, created_at))
+            conn.commit()
+
+            # 新增員工帳號
+            insert_query = """
+                INSERT INTO employeeaccount (account, password, boss_id)
+                VALUES (%s, %s, %s)
+            """
+            cursor.execute(insert_query, (account, password, boss_id))
+            conn.commit()
+
+            # 新增員工薪資
+            insert_query = """
+                INSERT INTO salary (user_id, salary)
+                VALUES (%s, %s)
+            """
+            cursor.execute(insert_query, (account, 10000))
+            conn.commit()
+            print("Using Backup Successfully")
+            return jsonify({
+                'status': 'success',
+                'message': '註冊成功',
+                'data': {
+                    'account': account,
+                    'access_token': access_token,
+                    'refresh_token': refresh_token,
+                    'created_at': created_at,
+                    'password': password,
+                    'boss_id': boss_id
+                }
+            }), 201
+
         return jsonify({'status': 'error', 'message': f'註冊失敗: {str(e)}'}), 500
     finally:
         conn.close()
@@ -901,17 +1011,8 @@ def get_employee_records():
     if not user_id or not start_time or not end_time:
         return jsonify({'status': 'error', 'message': '缺少必要參數'}), 400
 
-    conn = get_db_connection()
-    if not conn:
-        # using backup database
-        try:
-            conn = get_backup_db_connection()
-        except Exception as e:
-            print("Exception while connecting to Backup YugabyteDB")
-            print(e)
-            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
     try:
+        conn = get_db_connection()
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             query = """
                 SELECT user_id, type, time 
@@ -936,6 +1037,30 @@ def get_employee_records():
                 'data': result
             }), 200
     except Exception as e:
+        conn = get_backup_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            query = """
+                SELECT user_id, type, time 
+                FROM Record 
+                WHERE user_id = %s AND time BETWEEN %s AND %s
+                ORDER BY time DESC
+            """
+            cursor.execute(query, (user_id, start_time, end_time,))
+            records = cursor.fetchall()
+
+            result = []
+            for record in records:
+                result.append({
+                    'user_id': record['user_id'],
+                    'type': record['type'],
+                    'time': record['time']
+                })
+            print("Using Backup Successfully")
+            return jsonify({
+                'status': 'success',
+                'message': '查詢成功',
+                'data': result
+            }), 200
         return jsonify({'status': 'error', 'message': f'查詢失敗: {str(e)}'}), 500
     finally:
         conn.close()
@@ -968,17 +1093,8 @@ def get_employee_salary():
     if not user_id:
         return jsonify({'status': 'error', 'message': '缺少必要參數'}), 400
 
-    conn = get_db_connection()
-    if not conn:
-        # using backup database
-        try:
-            conn = get_backup_db_connection()
-        except Exception as e:
-            print("Exception while connecting to Backup YugabyteDB")
-            print(e)
-            return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
-        print("Can not connect to Main YugabyteDB, using Backup YugabyteDB")
     try:
+        conn = get_db_connection()
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             query = """
                 SELECT user_id, salary
@@ -1001,6 +1117,28 @@ def get_employee_salary():
                 'data': result
             }), 200
     except Exception as e:
+        conn = get_backup_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            query = """
+                SELECT user_id, salary
+                FROM Salary 
+                WHERE user_id = %s
+            """
+            cursor.execute(query, (user_id, ))
+            records = cursor.fetchall()
+
+            result = []
+            for record in records:
+                result.append({
+                    'user_id': record['user_id'],
+                    'salary': record['salary']
+                })
+            print("Using Backup Successfully")
+            return jsonify({
+                'status': 'success',
+                'message': '查詢成功',
+                'data': result
+            }), 200
         return jsonify({'status': 'error', 'message': f'查詢失敗: {str(e)}'}), 500
     finally:
         conn.close()
