@@ -3,10 +3,12 @@ import psycopg2
 import psycopg2.extras
 import requests
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from functools import wraps
 from datetime import datetime
 
 app = Flask(__name__)
+CORS(app)
 
 # 從 url.json 讀取資料庫連線設定
 with open('access_control_system/url.json') as f:
@@ -24,24 +26,14 @@ CONFIG = {
 }
 
 
-
 def get_db_connection():
-    """建立與 YugabyteDB 的連線"""
-    try:
-        if CONFIG['sslMode'] != '':
-            conn = psycopg2.connect(host=CONFIG['host'], port=CONFIG['port'], database=CONFIG['dbName'],
-                                    user=CONFIG['dbUser'], password=CONFIG['dbPassword'],
-                                    sslmode=CONFIG['sslMode'], sslrootcert=CONFIG['sslRootCert'],
-                                    connect_timeout=10)
-        else:
-            conn = psycopg2.connect(host=CONFIG['host'], port=CONFIG['port'], database=CONFIG['dbName'],
-                                    user=CONFIG['dbUser'], password=CONFIG['dbPassword'],
-                                    connect_timeout=10)
-        print("成功連接到 YugabyteDB!")
-        return conn
-    except Exception as e:
-        print(f"資料庫連線失敗: {e}")
-        return None
+    return psycopg2.connect(
+        host=CONFIG['host'],
+        port=CONFIG['port'],
+        database=CONFIG['dbName'],
+        user=CONFIG['dbUser'],
+        password=CONFIG['dbPassword'],
+        sslrootcert=CONFIG['sslRootCert'])
 
 
 def verify_boss_access(func):
@@ -49,14 +41,14 @@ def verify_boss_access(func):
     def wrapper(*args, **kwargs):
         access_token = request.headers.get('Authorization')
         user_id = request.headers.get('X-User-ID')
-        
+
         if not access_token or not user_id:
             return jsonify({'status': 'error', 'message': '未提供身份認證'}), 401
 
         # 先檢查 token 是否有效
-        auth_response = requests.get('http://localhost:5000/authorization/authorize', 
-                                   json={'access_token': access_token, 'user_id': user_id})
-        
+        auth_response = requests.get('http://localhost:5000/authorization/authorize',
+                                     json={'access_token': access_token, 'user_id': user_id})
+
         if auth_response.status_code != 200:
             if auth_response.json().get('result') == 'Expired':
                 return jsonify({'status': 'error', 'message': '認證已過期'}), 401
@@ -89,9 +81,9 @@ def get_subordinates(boss_id, cursor):
     return [row['user_id'] for row in cursor.fetchall()]
 
 
-@app.route('/api/boss/employees_info', methods=['GET'])
+@app.route('/boss/subordinate_record', methods=['GET'])
 @verify_boss_access
-def get_employees_info():
+def get_subordinate_record():
     """
     BOSS API：查詢員工的打卡時間和薪資。
     可以選擇查詢所有員工或特定員工，並可指定時間範圍。
@@ -104,8 +96,8 @@ def get_employees_info():
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             boss_id = request.headers.get('X-User-ID')
             user_id = request.args.get('user_id')
-            start_date = request.args.get('start_date')
-            end_date = request.args.get('end_date')
+            start_date = request.args.get('start_time')
+            end_date = request.args.get('end_time')
 
             # Get subordinates for the boss
             subordinates = get_subordinates(boss_id, cursor)
@@ -118,8 +110,8 @@ def get_employees_info():
             if start_date and end_date:
                 date_condition = "AND r.time BETWEEN %s AND %s"
                 try:
-                    date_params = [datetime.strptime(start_date, '%Y-%m-%d'), 
-                                 datetime.strptime(end_date, '%Y-%m-%d')]
+                    date_params = [datetime.strptime(start_date, '%Y-%m-%d'),
+                                   datetime.strptime(end_date, '%Y-%m-%d')]
                 except ValueError:
                     return jsonify({'status': 'error', 'message': '日期格式錯誤，請使用 YYYY-MM-DD 格式'}), 400
 
@@ -206,9 +198,9 @@ def get_employees_info():
         conn.close()
 
 
-@app.route('/api/boss/verify-subordinate', methods=['GET'])
+@app.route('/boss/subordinate_salary', methods=['GET'])
 @verify_boss_access
-def verify_subordinate():
+def subordinate_salary():
     """Verify if an employee is a subordinate of the requesting boss"""
     conn = get_db_connection()
     if not conn:
@@ -218,7 +210,7 @@ def verify_subordinate():
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             boss_id = request.headers.get('X-User-ID')
             employee_id = request.args.get('employee_id')
-            
+
             if not employee_id:
                 return jsonify({'status': 'error', 'message': '未提供員工 ID'}), 400
 
@@ -228,7 +220,7 @@ def verify_subordinate():
                     WHERE user_id = %s AND boss_id = %s
                 ) as is_subordinate
             """, (employee_id, boss_id))
-            
+
             result = cursor.fetchone()
             return jsonify({
                 'status': 'success',
@@ -243,4 +235,4 @@ def verify_subordinate():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5000)
