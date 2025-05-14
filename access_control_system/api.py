@@ -1170,6 +1170,85 @@ def get_employee_salary():
         conn.close()
 
 
+@app.route('/api/login', methods=['POST'])
+def login():
+    """
+    員工登入 API
+    需要提供:
+    - account: 員工帳號
+    - password: 員工密碼
+    - role:     身分別
+    """
+    data = request.get_json()
+    account = data.get('account')
+    password = data.get('password')
+    role = data.get('role')
+
+    if not account or not password or not role:
+        return jsonify({'status': 'error', 'message': '缺少必要參數'}), 400
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            # 檢查用戶是否存在
+            if role == "employee":
+                query = "SELECT * FROM employeeaccount WHERE account = %s AND password = %s"
+            elif role == "boss":
+                query = "SELECT * FROM bossaccount WHERE account = %s AND password = %s"
+            cursor.execute(query, (account, password))
+            user = cursor.fetchone()
+
+            query = "SELECT access_token,refresh_token FROM author WHERE user_id = %s"
+            cursor.execute(query, (account,))
+            tokens = cursor.fetchone()
+
+            if not user:
+                return jsonify({'status': 'error', 'message': '帳號或密碼錯誤'}), 401
+
+            return jsonify({
+                'status': 'success',
+                'message': '登入成功',
+                'data': {
+                    'user_id': account,
+                    'password': password,
+                    'access_token': tokens[0],
+                    'refresh_token': tokens[1]
+                }
+            }), 200
+
+    except Exception as e:
+        conn = get_backup_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            # 檢查用戶是否存在
+            if role == "employee":
+                query = "SELECT * FROM employeeaccount WHERE account = %s AND password = %s"
+            elif role == "boss":
+                query = "SELECT * FROM bossaccount WHERE account = %s AND password = %s"
+            cursor.execute(query, (account, password))
+            user = cursor.fetchone()
+
+            query = "SELECT access_token,refresh_token FROM author WHERE user_id = %s"
+            cursor.execute(query, (account,))
+            tokens = cursor.fetchone()
+
+            if not user:
+                return jsonify({'status': 'error', 'message': '帳號或密碼錯誤'}), 401
+
+            return jsonify({
+                'status': 'success',
+                'message': '登入成功',
+                'data': {
+                    'user_id': account,
+                    'password': password,
+                    'access_token': tokens[0],
+                    'refresh_token': tokens[1]
+                }
+            }), 200
+        return jsonify({'status': 'error', 'message': f'登入失敗: {str(e)}'}), 500
+    finally:
+        conn.close()
+
+
 # test
 if __name__ == "__main__":
     # run the app on port 5000

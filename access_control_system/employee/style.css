@@ -44,7 +44,9 @@ body {
  */
 .container {
     width: 100%;
+    max-width: 1200px;
     padding: 20px;
+    margin: 0 auto;
 }
 
 /* 登入卡片樣式
@@ -248,6 +250,426 @@ body {
     text-decoration: underline;
 }
 
+/* 卡片元件 */
+.card {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* 選單卡片樣式 */
+.menu-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.menu-item {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+}
+
+.menu-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.feature-link {
+    text-decoration: none;
+    color: var(--text-color);
+    display: block;
+    height: 100%;
+}
+
+.feature-link h3 {
+    margin-bottom: 0.75rem;
+    color: var(--primary-color);
+}
+
+/* 按鈕樣式 */
+.logout-button, .logout-btn {
+    background-color: #f87171;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 1.5rem;
+    width: 100%;
+}
+
+.logout-button:hover, .logout-btn:hover {
+    background-color: #ef4444;
+}
+
+.back-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    display: inline-block;
+    margin-right: 1rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.back-link:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+/* 打卡頁面樣式 */
+.clock-display {
+    background-color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+}
+
+.clock-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.clock-btn {
+    flex: 1;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.clock-in {
+    background-color: #4ade80;
+    color: white;
+}
+
+.clock-in:hover {
+    background-color: #22c55e;
+}
+
+.clock-out {
+    background-color: #60a5fa;
+    color: white;
+}
+
+.clock-out:hover {
+    background-color: #3b82f6;
+}
+
+.clock-result {
+    min-height: 80px;
+    margin-bottom: 1.5rem;
+}
+
+.retry-btn {
+    background-color: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+}
+
+.retry-btn:hover {
+    background-color: #d97706;
+}
+
+/* 表格樣式 */
+.table-container {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+}
+
+.records-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.records-table th, .records-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.records-table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.records-table tr:last-child td {
+    border-bottom: none;
+}
+
+.records-table tr:hover td {
+    background-color: #f9fafb;
+}
+
+/* 日期範圍表單 */
+.date-range-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.date-range-form .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    align-self: flex-end;
+}
+
+.search-btn:hover {
+    background-color: var(--primary-hover);
+}
+
+/* 通知樣式 */
+.notification {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    width: 300px;
+    max-width: calc(100% - 2rem);
+    z-index: 1000;
+    animation: slideIn 0.3s ease forwards;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.notification-body {
+    padding: 1rem;
+    color: var(--text-color);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.fade-out {
+    animation: fadeOut 0.5s ease forwards;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* 薪資查詢頁面 */
+.salary-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.salary-header {
+    background-color: #f3f4f6;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.salary-amount {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-top: 1rem;
+}
+
+.salary-details {
+    padding: 1.5rem;
+}
+
+.salary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.salary-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.salary-label {
+    font-weight: 500;
+    color: var(--text-light);
+}
+
+.salary-value {
+    font-weight: 500;
+}
+
+/* 警示訊息 */
+.alert {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    background-color: #d1fae5;
+    border-left: 4px solid #10b981;
+    color: #065f46;
+}
+
+.alert-error {
+    background-color: #fee2e2;
+    border-left: 4px solid #ef4444;
+    color: #991b1b;
+}
+
+/* 加載狀態 */
+.loading {
+    text-align: center;
+    color: var(--text-light);
+    padding: 1rem;
+}
+
+/* 空數據訊息 */
+.no-data-message {
+    text-align: center;
+    color: var(--text-light);
+    padding: 2rem 0;
+}
+
+/* MQTT 狀態提示 */
+.mqtt-status {
+    background-color: #fee2e2;
+    color: #4648d4;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-top: 1.5rem;
+    text-align: center;
+    display: none;
+}
+
+.mqtt-success {
+    background-color: #fee2e2;
+    color: #10b981;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-top: 1.5rem;
+    text-align: center;
+    display: none;
+}
+
+.mqtt-failure {
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-top: 1.5rem;
+    text-align: center;
+    display: none;
+}
+
+
+/* 導航區域 */
+.navigation {
+    display: flex;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+/* 註冊頁面專用樣式 */
+.register-card {
+    max-width: 480px;
+}
+
+.register-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.875rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 1.5rem;
+    transition: background-color 0.3s ease;
+}
+
+.register-button:hover {
+    background-color: var(--primary-hover);
+}
+
+/* 錯誤訊息 */
+.error-message {
+    color: var(--error);
+    background-color: #fee2e2;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
 /* 響應式設計
  * - 手機版面配置調整
  * - 表單選項垂直排列
@@ -261,5 +683,27 @@ body {
         flex-direction: column;
         gap: 1rem;
         align-items: flex-start;
+    }
+    
+    .menu-card {
+        grid-template-columns: 1fr;
+    }
+    
+    .clock-buttons {
+        flex-direction: column;
+    }
+    
+    .date-range-form {
+        flex-direction: column;
+    }
+    
+    .navigation {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .back-link {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
     }
 }

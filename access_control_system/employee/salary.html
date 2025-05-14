@@ -13,62 +13,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>薪資查詢</title>
+    <title>薪資查詢 - 員工系統</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>薪資查詢</h1>
-        <p id="salaryInfo">載入中...</p>
-        <button id="retryButton" style="display: none;">重新嘗試</button>
-        <button id="logoutButton">登出</button>
+        <div class="card">
+            <h1>薪資查詢</h1>
+            
+            <div id="salaryInfo" class="salary-info">載入中...</div>
+            
+            <button id="retryButton" class="retry-btn" style="display: none;">重新嘗試</button>
+            
+            <div class="navigation">
+                <a href="menu.html" class="back-link">返回選單</a>
+                <button id="logoutButton" class="logout-btn">登出</button>
+            </div>
+        </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', async function () {
-            const userId = localStorage.getItem('user_id');
-            const accessToken = localStorage.getItem('access_token');
-
-            if (!userId || !accessToken) {
-                alert('未登入，請重新登入');
-                window.location.href = 'index.html';
-                return;
-            }
-
-            const salaryInfoElement = document.getElementById('salaryInfo');
-            const retryButton = document.getElementById('retryButton');
-
-            async function fetchSalary() {
-                try {
-                    // 呼叫 /api/salary 取得薪資資訊
-                    const response = await fetch(`http://localhost:5000/api/salary?user_id=${userId}&access_token=${accessToken}`);
-                    const data = await response.json();
-
-                    if (data.status !== 'success') {
-                        throw new Error(data.message || '無法取得薪資資訊');
-                    }
-
-                    // 顯示薪資資訊
-                    salaryInfoElement.textContent = `您的薪資為：${data.data.base_salary} 元`;
-                    retryButton.style.display = 'none'; // 隱藏重新嘗試按鈕
-                } catch (err) {
-                    salaryInfoElement.textContent = `無法取得薪資資訊：${err.message}`;
-                    retryButton.style.display = 'block'; // 顯示重新嘗試按鈕
-                    console.error(err);
-                }
-            }
-
-            // 初次載入時呼叫 fetchSalary
-            fetchSalary();
-
-            // 點擊重新嘗試按鈕時重新呼叫 fetchSalary
-            retryButton.addEventListener('click', fetchSalary);
-
-            // 登出功能
-            document.getElementById('logoutButton').addEventListener('click', function () {
-                localStorage.clear();
-                window.location.href = 'index.html';
-            });
-        });
-    </script>
+    <script src="salary.js"></script>
 </body>
 </html>

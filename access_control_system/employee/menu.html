@@ -18,78 +18,36 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
-<body>
-    <div class="container">
+<body>    <div class="container">
         <h1>歡迎使用員工系統</h1>
-        <ul class="menu">
-            <li><a href="records.html">查看打卡記錄</a></li>
-            <li><a href="salary.html">查詢薪資</a></li>
-            <li><a href="clock.html">進行打卡</a></li>
-            <li><button id="logoutButton">登出</button></li>
-        </ul>
-        <p id="mqttStatus" style="color: red; display: none;">MQTT 連線失敗，請檢查網路或稍後再試。</p>
+        <div class="menu-card">
+            <div class="menu-item">
+                <a href="records.html" class="feature-link">
+                    <div class="feature-icon">📋</div>
+                    <h3>查看打卡記錄</h3>
+                    <p>查詢您的所有打卡記錄</p>
+                </a>
+            </div>
+            <div class="menu-item">
+                <a href="salary.html" class="feature-link">
+                    <div class="feature-icon">💰</div>
+                    <h3>查詢薪資</h3>
+                    <p>檢視您的薪資明細</p>
+                </a>
+            </div>
+            <div class="menu-item">
+                <a href="clock.html" class="feature-link">
+                    <div class="feature-icon">⏰</div>
+                    <h3>進行打卡</h3>
+                    <p>上班或下班打卡</p>
+                </a>
+            </div>
+        </div>
+        <button id="logoutButton" class="logout-button">登出</button>
+        <p id="mqttStatus" class="mqtt-status">MQTT 連線中...</p>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const userId = localStorage.getItem('user_id');
-            const accessToken = localStorage.getItem('access_token');
+    <script src="menu.js"></script>
 
-            if (!userId || !accessToken) {
-                alert('未登入，請重新登入');
-                window.location.href = 'index.html';
-                return;
-            }
-
-            document.getElementById('logoutButton').addEventListener('click', function () {
-                localStorage.clear();
-                window.location.href = 'index.html';
-            });
-
-            // MQTT 客戶端初始化
-            const client = new Paho.MQTT.Client('broker.hivemq.com', 8000, `clientId-${Math.random().toString(16).substr(2, 8)}`);
-
-            // 當收到訊息時的處理函數
-            client.onMessageArrived = function (message) {
-                console.log('收到異常通知:', message.payloadString);
-                alert(`異常通知: ${message.payloadString}`);
-            };
-
-            // 當連線成功時的處理函數
-            client.onConnect = function () {
-                console.log('MQTT 連線成功');
-                try {
-                    client.subscribe(`access_control/alerts/${userId}`, {
-                        onSuccess: function () {
-                            console.log('訂閱成功');
-                        },
-                        onFailure: function (error) {
-                            console.error('訂閱失敗:', error.errorMessage);
-                            document.getElementById('mqttStatus').style.display = 'block';
-                        }
-                    });
-                } catch (err) {
-                    console.error('訂閱過程中發生錯誤:', err.message);
-                    document.getElementById('mqttStatus').style.display = 'block';
-                }
-            };
-
-            // 當連線失敗時的處理函數
-            client.onConnectionLost = function (responseObject) {
-                if (responseObject.errorCode !== 0) {
-                    console.error('MQTT 連線中斷:', responseObject.errorMessage);
-                    document.getElementById('mqttStatus').style.display = 'block';
-                }
-            };
-
-            // 連線至 MQTT Broker
-            client.connect({
-                onSuccess: client.onConnect,
-                onFailure: function (error) {
-                    console.error('MQTT 連線失敗:', error.errorMessage);
-                    document.getElementById('mqttStatus').style.display = 'block';
-                }
-            });
-        });
     </script>
 </body>
 </html>
