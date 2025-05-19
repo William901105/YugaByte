@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>員工薪資查詢</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>員工薪資查詢</h1>
+        <div class="nav-buttons">
+            <button onclick="window.location.href='dashboard.html'">返回打卡記錄</button>
+            <button onclick="window.location.href='index.html'">返回首頁</button>
+        </div>
+        
+        <div class="search-container">
+            <div class="date-picker">
+                <label for="startDate">開始日期：</label>
+                <input type="date" id="startDate">
+                <label for="endDate">結束日期：</label>
+                <input type="date" id="endDate">
+                <button onclick="searchSalary()">查詢</button>
+            </div>
+        </div>
+
+        <div class="salary-summary">
+            <h2>薪資統計</h2>
+            <div id="salaryStats">
+                <!-- 薪資統計將在這裡動態顯示 -->
+            </div>
+        </div>
+
+        <div class="salary-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>員工ID</th>
+                        <th>基本薪資</th>
+                        <th>加班費</th>
+                        <th>遲到扣款</th>
+                        <th>缺勤扣款</th>
+                        <th>實領薪資</th>
+                    </tr>
+                </thead>
+                <tbody id="salaryTableBody">
+                    <!-- 薪資數據將在這裡動態顯示 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="salary.js"></script>
+</body>
+</html> 
