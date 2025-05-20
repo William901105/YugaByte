@@ -32,23 +32,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function fetchRecords() {
         const current_token = localStorage.getItem('access_token');
         const current_bossId = localStorage.getItem('user_id');
+        const current_refresh_token = localStorage.getItem('refresh_token');
 
-        if (!current_token || !current_bossId) {
+        if (!current_token || !current_bossId || !current_refresh_token) {
             handleLogout('獲取資料時認證信息丢失，請重新登入');
             return;
         }
 
         try {
-            const start = new Date(startDate.value).getTime() / 1000;
+            const start = new Date(startDate.value).getTime()/1000;
             const end = new Date(endDate.value).getTime() / 1000 + 86400; // 包含結束日期
 
-            const recordResponse = await fetch(`/boss/subordinate_record?start_time=${start}&end_time=${end}`, {
+            const recordResponse = await fetch(`http://localhost:5000/boss/subordinate_record`, {
                 method: 'GET',
                 headers: {
                     'Authorization': current_token,
                     'X-User-ID': current_bossId, // 注意：這裡使用 X-User-ID
                     'Accept': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    "user_id":"Jason",
+                    "start_time":start,
+                    "end_time":end
+                })
             });
             
             if (recordResponse.status === 401) {
@@ -136,50 +142,13 @@ function handleLogout(message = null) {
 async function checkAuthorization() {
     const access_token = localStorage.getItem('access_token');
     const user_id = localStorage.getItem('user_id');
+    const refresh_token = localStorage.getItem('refresh_token');
 
-    if (!access_token || !user_id) {
+    if (!access_token||!refresh_token || !user_id) {
         handleLogout('認證信息缺失，請重新登入');
         return false;
     }
 
-    try {
-        const response = await fetch('/authorization/authorize', {
-            method: 'GET',
-            headers: {
-                'Authorization': access_token,
-                'User-Id': user_id // /authorization/authorize 端點使用 User-Id
-            }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) { // HTTP 狀態碼 200-299
-            if (data.result === 'NeedsRefresh') {
-                localStorage.setItem('access_token', data.new_access_token);
-                localStorage.setItem('refresh_token', data.new_refresh_token);
-                // user_id 保持不變
-                return true;
-            } else if (data.result === 'Valid') {
-                return true;
-            } else {
-                // API 回應 OK 但 result 不是預期的 'Valid' 或 'NeedsRefresh'
-                handleLogout(data.message || `認證回應無效 (${data.result})，請重新登入`);
-                return false;
-            }
-        } else { // HTTP 狀態碼非 OK (例如 401, 500)
-            const errorMessage = data.result || data.message || '認證服務器錯誤';
-            if (data.result === 'Invalid' || data.result === 'Expired') {
-                 handleLogout(`認證${data.result === 'Expired' ? '已過期' : '無效'}，請重新登入`);
-            } else {
-                 handleLogout(`認證檢查失敗: ${errorMessage}`);
-            }
-            return false;
-        }
-    } catch (error) { // 網路錯誤或 JSON 解析錯誤
-        console.error('Authorization check critical error:', error);
-        handleLogout('認證檢查時發生系統錯誤，請重新登入');
-        return false;
-    }
 }
 
 // 定期檢查認證狀態

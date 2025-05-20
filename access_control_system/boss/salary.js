@@ -13,46 +13,10 @@ function handleLogout(message = null) {
 async function checkAuthorization() {
     const access_token = localStorage.getItem('access_token');
     const user_id = localStorage.getItem('user_id');
+    const refresh_token = localStorage.getItem('refresh_token');
 
-    if (!access_token || !user_id) {
+    if (!access_token || !user_id || !refresh_token) {
         handleLogout('認證信息缺失，請重新登入');
-        return false;
-    }
-
-    try {
-        const response = await fetch('/authorization/authorize', {
-            method: 'GET',
-            headers: {
-                'Authorization': access_token,
-                'User-Id': user_id // /authorization/authorize 端點使用 User-Id
-            }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            if (data.result === 'NeedsRefresh') {
-                localStorage.setItem('access_token', data.new_access_token);
-                localStorage.setItem('refresh_token', data.new_refresh_token);
-                return true;
-            } else if (data.result === 'Valid') {
-                return true;
-            } else {
-                handleLogout(data.message || `認證回應無效 (${data.result})，請重新登入`);
-                return false;
-            }
-        } else {
-            const errorMessage = data.result || data.message || '認證服務器錯誤';
-             if (data.result === 'Invalid' || data.result === 'Expired') {
-                 handleLogout(`認證${data.result === 'Expired' ? '已過期' : '無效'}，請重新登入`);
-            } else {
-                 handleLogout(`認證檢查失敗: ${errorMessage}`);
-            }
-            return false;
-        }
-    } catch (error) {
-        console.error('Authorization check critical error:', error);
-        handleLogout('認證檢查時發生系統錯誤，請重新登入');
         return false;
     }
 }
