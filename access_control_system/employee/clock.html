@@ -15,6 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>打卡 - 員工系統</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style_new.css">
 </head>
 <body>
     <div class="container">
@@ -32,12 +33,10 @@
             <div id="clockResult" class="clock-result"></div>
             
             <button id="retryButton" class="retry-btn" style="display: none;">重新嘗試</button>
-            
-            <div class="navigation">
-                <a href="menu.html" class="back-link">返回選單</a>
+              <div class="footer-row">
+                <button class="back-link-btn" onclick="window.location.href='menu.html'">返回選單</button>
                 <button id="logoutButton" class="logout-btn">登出</button>
             </div>
-        </div>
-    </div>    <script src="clock.js"></script>
+        </div>    </div>    <script src="clock_new.js"></script>
 </body>
 </html>

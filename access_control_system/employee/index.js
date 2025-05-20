@@ -82,7 +82,12 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (err) {
             // 清理 LocalStorage，避免殘留舊的登入資訊
             localStorage.removeItem('user_id');
-            alert(`登入失敗：${err.message}`);
+            
+            if (err.message === 'Failed to fetch') {
+                alert('無法連線到伺服器，請確認網路或稍後再試');
+            } else {
+                alert(`登入失敗：${err.message}`);
+            }
             console.error(err);
         } finally {
             loginButton.disabled = false;

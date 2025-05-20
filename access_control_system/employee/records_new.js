@@ -4,27 +4,8 @@
  * 功能說明：
  * 1. 提供日期範圍選擇功能
  * 2. 查詢指定期間的打卡記錄
- * 3. 顯示記錄的詳細資訊：
- *    - 上班時間
- *    - 下班時間
- *    - 工作時數
- *    - 異常標記（遲到、早退等）
- * 4. 支援分頁顯示
- * 
- * API端點：
- * - GET /employee/records：獲取打卡記錄
- *   參數：
- *   - startDate: 開始日期（Unix timestamp）
- *   - endDate: 結束日期（Unix timestamp）
- * 
- * 預設設定：
- * - 結束日期：今天
- * - 開始日期：一個月前
- * 
- * 安全機制：
- * - API 請求帶有 Authorization 標頭
- * - 驗證 token 有效性
- * - 自動處理 token 過期情況
+ * 3. 顯示記錄的詳細資訊
+ * 4. 整合 Token 驗證機制
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -55,58 +36,95 @@ document.addEventListener('DOMContentLoaded', function () {
     const oneMonthAgo = new Date(today.setMonth(today.getMonth() - 1));
     startDateInput.value = oneMonthAgo.toISOString().split('T')[0];
 
+    // 驗證 token
+    async function verifyToken() {
+        try {
+            const response = await fetch('http://localhost:5000/authorization/authorize', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    access_token: accessToken,
+                    user_id: userId
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.result === 'Expired') {
+                // Token 過期，嘗試刷新
+                return await refreshToken();
+            }
+            
+            return data.result === 'Valid';
+        } catch (error) {
+            console.error('Token 驗證錯誤:', error);
+            return false;
+        }
+    }
+
+    // 刷新 token
+    async function refreshToken() {
+        try {
+            const refreshToken = localStorage.getItem('refresh_token');
+            const response = await fetch('http://localhost:5000/authorization/refreshToken', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    refresh_token: refreshToken,
+                    user_id: userId
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                localStorage.setItem('access_token', data.new_access_token);
+                localStorage.setItem('refresh_token', data.new_refresh_token);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Token 刷新錯誤:', error);
+            return false;
+        }
+    }
+
     // 查詢打卡記錄
     async function fetchRecords(startDate, endDate) {
         try {
             loadingIndicator.style.display = 'block';
             errorMessage.style.display = 'none';
             noRecordsMessage.style.display = 'none';
+
+            // 先驗證 token
+            const isValid = await verifyToken();
+            if (!isValid) {
+                throw new Error('認證已過期，請重新登入');
+            }
             
             // 轉換日期格式為時間戳
-            const start = new Date(startDate).getTime() / 1000;
-            const end = new Date(endDate).getTime() / 1000 + 86399; // 加上一天減1秒，涵蓋整天
+            const start = Math.floor(new Date(startDate).getTime() / 1000);
+            const end = Math.floor(new Date(endDate).getTime() / 1000 + 86399); // 加上一天減1秒
 
-            // 改用 GET 並將參數放在 query string
-            const url = `http://localhost:5000/employee/records?user_id=${encodeURIComponent(userId)}&start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}`;
-            const response = await fetch(url, {
+            // 查詢員工打卡記錄
+            const response = await fetch('http://localhost:5000/employee/records', {
                 method: 'GET',
                 headers: {
+                    'Content-Type': 'application/json',
                     'Authorization': accessToken,
                     'X-User-ID': userId
-                }
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    start_time: start,
+                    end_time: end
+                })
             });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    // Token 過期，嘗試刷新
-                    const refreshToken = localStorage.getItem('refresh_token');
-                    const refreshResponse = await fetch('http://localhost:5000/authorization/refreshToken', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            refresh_token: refreshToken,
-                            user_id: userId
-                        })
-                    });
-
-                    if (refreshResponse.ok) {
-                        const refreshData = await refreshResponse.json();
-                        localStorage.setItem('access_token', refreshData.new_access_token);
-                        localStorage.setItem('refresh_token', refreshData.new_refresh_token);
-                        // 重試查詢
-                        return fetchRecords(startDate, endDate);
-                    } else {
-                        throw new Error('認證已過期，請重新登入');
-                    }
-                }
-                const errorData = await response.json();
-                throw new Error(errorData.message || '查詢失敗');
-            }
 
             const data = await response.json();
             
-            if (!data.data || !Array.isArray(data.data)) {
-                throw new Error('回應格式錯誤');
+            if (data.status !== 'success') {
+                throw new Error(data.message || '查詢失敗');
             }
 
             // 更新表格

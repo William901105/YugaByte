@@ -204,22 +204,36 @@ body {
     text-decoration: underline;
 }
 
+/* 按鈕基礎樣式 */
+.btn {
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+    text-align: center;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
 /* 登入按鈕樣式
  * - 主色調背景
  * - 圓角和過渡效果
  * - 懸停狀態變化
  */
 .login-button {
-    width: 100%;
-    padding: 0.75rem;
+    @apply btn-base;
     background-color: var(--primary-color);
     color: white;
-    border: none;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
 }
 
 .login-button:hover {
@@ -229,6 +243,103 @@ body {
 .login-button:focus {
     outline: none;
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.5);
+}
+
+/* 返回按鈕 */
+.back-link-btn {
+    background: #5a4ff3;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+    text-align: center;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(90, 79, 243, 0.2);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.back-link-btn:hover {
+    background: #4338ca;
+    box-shadow: 0 4px 6px rgba(90, 79, 243, 0.3);
+    transform: translateY(-1px);
+}
+
+/* 登出按鈕樣式 */
+.logout-button, .logout-btn {
+    @apply btn-base;
+    background-color: #f87171;
+    color: white;
+    box-shadow: 0 2px 4px rgba(248, 113, 113, 0.2);
+}
+
+.logout-button:hover, .logout-btn:hover {
+    background-color: #ef4444;
+    box-shadow: 0 4px 6px rgba(248, 113, 113, 0.3);
+}
+
+/* 打卡按鈕 */
+.clock-btn {
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    min-width: 140px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.clock-in {
+    background: #4ade80;
+    color: #fff;
+}
+
+.clock-in:hover {
+    background: #22c55e;
+    box-shadow: 0 4px 6px rgba(74, 222, 128, 0.3);
+}
+
+.clock-out {
+    background: #60a5fa;
+    color: #fff;
+}
+
+.clock-out:hover {
+    background: #3b82f6;
+    box-shadow: 0 4px 6px rgba(96, 165, 250, 0.3);
+}
+
+/* 重試按鈕樣式 */
+.retry-btn {
+    @apply btn-base;
+    background-color: #f59e0b;
+    color: white;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.retry-btn:hover {
+    background-color: #d97706;
+    box-shadow: 0 4px 6px rgba(245, 158, 11, 0.3);
+}
+
+/* 搜尋按鈕樣式 */
+.search-btn {
+    @apply btn-base;
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+}
+
+.search-btn:hover {
+    background-color: var(--primary-hover);
+    box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
 }
 
 /* 頁尾樣式
@@ -306,105 +417,6 @@ body {
     color: var(--primary-color);
 }
 
-/* 按鈕樣式 */
-.logout-button, .logout-btn {
-    background-color: #f87171;
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-top: 1.5rem;
-    width: 100%;
-}
-
-.logout-button:hover, .logout-btn:hover {
-    background-color: #ef4444;
-}
-
-.back-link {
-    color: var(--primary-color);
-    text-decoration: none;
-    display: inline-block;
-    margin-right: 1rem;
-    font-weight: 500;
-    transition: color 0.3s ease;
-}
-
-.back-link:hover {
-    color: var(--primary-hover);
-    text-decoration: underline;
-}
-
-/* 打卡頁面樣式 */
-.clock-display {
-    background-color: #f3f4f6;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 2rem;
-    text-align: center;
-    font-size: 1.1rem;
-    letter-spacing: 0.5px;
-}
-
-.clock-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.clock-btn {
-    flex: 1;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    border: none;
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.clock-in {
-    background-color: #4ade80;
-    color: white;
-}
-
-.clock-in:hover {
-    background-color: #22c55e;
-}
-
-.clock-out {
-    background-color: #60a5fa;
-    color: white;
-}
-
-.clock-out:hover {
-    background-color: #3b82f6;
-}
-
-.clock-result {
-    min-height: 80px;
-    margin-bottom: 1.5rem;
-}
-
-.retry-btn {
-    background-color: #f59e0b;
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    margin-bottom: 1.5rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    width: 100%;
-}
-
-.retry-btn:hover {
-    background-color: #d97706;
-}
-
 /* 表格樣式 */
 .table-container {
     margin-top: 1.5rem;
@@ -448,21 +460,6 @@ body {
 .date-range-form .form-group {
     flex: 1;
     min-width: 200px;
-}
-
-.search-btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    padding: 0.5rem 1.5rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    align-self: flex-end;
-}
-
-.search-btn:hover {
-    background-color: var(--primary-hover);
 }
 
 /* 通知樣式 */

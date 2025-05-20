@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
     welcomeMessage.textContent = `歡迎，${userId}`;
 
     // MQTT 客戶端初始化
-    const client = new Paho.MQTT.Client('broker.emqx.io', 8883, `clientId-${userId}`);
+    const client = new Paho.MQTT.Client('wss://broker.emqx.io:8084/mqtt', `clientId-${userId}`);
 
     // 當收到消息時的處理函數
     client.onMessageArrived = function(message) {
@@ -124,25 +124,31 @@ document.addEventListener('DOMContentLoaded', function () {
     // 嘗試連接 MQTT
     function connectMQTT() {
         try {
-            document.getElementById('mqttStatus').style.display = 'block';
-            document.getElementById('mqttStatus').innerText = 'MQTT 連線中...';
-            document.getElementById('mqttStatus').style.color = 'blue';
+            const mqttStatus = document.getElementById('mqttStatus');
+            if (mqttStatus) {
+                mqttStatus.style.display = 'block';
+                mqttStatus.innerText = 'MQTT 連線中...';
+                mqttStatus.style.color = 'blue';
+            }
             client.connect({
                 onSuccess: onConnect,
-                useSSL: true,
                 timeout: 3,
-                onFailure: function() {
-                    document.getElementById('mqttStatus').style.display = 'block';
-                    document.getElementById('mqttStatus').innerText = 'MQTT 連線錯誤，將重新嘗試連線';
-                    document.getElementById('mqttStatus').style.color = 'red';
+                onFailure: function(err) {
+                    if (mqttStatus) {
+                        mqttStatus.style.display = 'block';
+                        mqttStatus.innerText = 'MQTT 連線錯誤，將重新嘗試連線' + (err && err.errorMessage ? ('\n' + err.errorMessage) : '');
+                        mqttStatus.style.color = 'red';
+                    }
                     setTimeout(connectMQTT, 5000);
                 }
             });
         } catch(e) {
-            console.error('MQTT 連線錯誤:', e);
-            document.getElementById('mqttStatus').style.display = 'block';
-            document.getElementById('mqttStatus').innerText = 'MQTT 連線錯誤，請檢查網路連線';
-            document.getElementById('mqttStatus').style.color = 'red';
+            const mqttStatus = document.getElementById('mqttStatus');
+            if (mqttStatus) {
+                mqttStatus.style.display = 'block';
+                mqttStatus.innerText = 'MQTT 連線錯誤，請檢查網路連線';
+                mqttStatus.style.color = 'red';
+            }
         }
     }
 
