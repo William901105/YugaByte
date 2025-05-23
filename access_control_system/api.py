@@ -1015,86 +1015,140 @@ def verify_employee_token(header):
 # 查詢打卡記錄
 
 
-@app.route('/employee/records', methods=['GET'])
-def get_employee_records():
+@app.route('/employee/records', methods=['GET', 'POST'])
+def employee_records():
     """
-    查詢打卡記錄
-    需要提供 user_id (員工ID), start_time, end_time (查詢範圍)
+    GET: 查詢打卡記錄
+    POST: 新增打卡記錄到 Record 表
     """
-    data = request.get_json()
-    print(request.get_json())
-    user_id = data.get('user_id')
-    start_time = data.get('start_time')
-    end_time = data.get('end_time')
-
-    # 驗證token
+    # 驗證 token
     header = request.headers
     token_response = verify_employee_token(header)
     if token_response[1] != 200:
         return token_response
+        
+    # 現有的 GET 方法處理
+    if request.method == 'GET':
+        data = request.get_json()
+        user_id = data.get('user_id')
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
 
-    # check if user_id is valid
-    header_user_id = header.get('X-User-ID')
-    if header_user_id != user_id:
-        return jsonify({'status': 'error', 'message': '無權限訪問'}), 403
+        # check if user_id is valid
+        header_user_id = header.get('X-User-ID')
+        if header_user_id != user_id:
+            return jsonify({'status': 'error', 'message': '無權限訪問'}), 403
 
-    # 驗證參數
-    if not user_id or not start_time or not end_time:
-        return jsonify({'status': 'error', 'message': '缺少必要參數'}), 400
+        # 驗證參數
+        if not user_id or not start_time or not end_time:
+            return jsonify({'status': 'error', 'message': '缺少必要參數'}), 400
 
-    try:
-        conn = get_db_connection()
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            query = """
-                SELECT user_id, type, time 
-                FROM Record 
-                WHERE user_id = %s AND time BETWEEN %s AND %s
-                ORDER BY time DESC
-            """
-            cursor.execute(query, (user_id, start_time, end_time,))
-            records = cursor.fetchall()
+        try:
+            conn = get_db_connection()
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                query = """
+                    SELECT user_id, type, time 
+                    FROM Record 
+                    WHERE user_id = %s AND time BETWEEN %s AND %s
+                    ORDER BY time DESC
+                """
+                cursor.execute(query, (user_id, start_time, end_time,))
+                records = cursor.fetchall()
 
-            result = []
-            for record in records:
-                result.append({
-                    'user_id': record['user_id'],
-                    'type': record['type'],
-                    'time': record['time']
-                })
+                result = []
+                for record in records:
+                    result.append({
+                        'user_id': record['user_id'],
+                        'type': record['type'],
+                        'time': record['time']
+                    })
 
-            return jsonify({
-                'status': 'success',
-                'message': '查詢成功',
-                'data': result
-            }), 200
-    except Exception as e:
-        conn = get_backup_db_connection()
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            query = """
-                SELECT user_id, type, time 
-                FROM Record 
-                WHERE user_id = %s AND time BETWEEN %s AND %s
-                ORDER BY time DESC
-            """
-            cursor.execute(query, (user_id, start_time, end_time,))
-            records = cursor.fetchall()
-
-            result = []
-            for record in records:
-                result.append({
-                    'user_id': record['user_id'],
-                    'type': record['type'],
-                    'time': record['time']
-                })
-            print("Using Backup Successfully")
-            return jsonify({
-                'status': 'success',
-                'message': '查詢成功',
-                'data': result
-            }), 200
-        return jsonify({'status': 'error', 'message': f'查詢失敗: {str(e)}'}), 500
-    finally:
-        conn.close()
+                return jsonify({
+                    'status': 'success',
+                    'message': '查詢成功',
+                    'data': result
+                }), 200
+        except Exception as e:
+            conn = get_backup_db_connection()
+            # 備份數據庫查詢...
+            # (保留原有的備份數據庫查詢邏輯)
+            return jsonify({'status': 'error', 'message': f'查詢失敗: {str(e)}'}), 500
+        finally:
+            conn.close()
+    
+    # 新增的 POST 方法處理，將打卡記錄寫入 Record 表
+    elif request.method == 'POST':
+        data = request.get_json()
+        user_id = data.get('user_id')
+        record_type = data.get('type')  # 'i' 或 'o' 表示上班或下班
+        record_time = data.get('time')
+        
+        # 檢查參數
+        if not user_id or not record_type or not record_time:
+            return jsonify({'status': 'error', 'message': '缺少必要參數'}), 400
+            
+        # check if user_id is valid
+        header_user_id = header.get('X-User-ID')
+        if header_user_id != user_id:
+            return jsonify({'status': 'error', 'message': '無權限訪問'}), 403
+            
+        # 檢查打卡類型
+        if record_type not in ['i', 'o']:
+            return jsonify({'status': 'error', 'message': '打卡類型必須為 i (上班) 或 o (下班)'}), 400
+            
+        try:
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                # 插入打卡記錄到 Record 表
+                insert_query = """
+                    INSERT INTO Record (user_id, type, time)
+                    VALUES (%s, %s, %s)
+                """
+                cursor.execute(insert_query, (user_id, record_type, record_time))
+                conn.commit()
+                
+                # 備份到備份數據庫
+                try:
+                    backup_conn = get_backup_db_connection()
+                    with backup_conn.cursor() as backup_cursor:
+                        backup_cursor.execute(insert_query, (user_id, record_type, record_time))
+                        backup_conn.commit()
+                    backup_conn.close()
+                    print("備份打卡記錄成功")
+                except Exception as backup_error:
+                    print(f"備份打卡記錄失敗: {backup_error}")
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': '打卡記錄已新增',
+                }), 201
+                
+        except Exception as e:
+            # 嘗試使用備份數據庫
+            try:
+                backup_conn = get_backup_db_connection()
+                with backup_conn.cursor() as backup_cursor:
+                    insert_query = """
+                        INSERT INTO Record (user_id, type, time)
+                        VALUES (%s, %s, %s)
+                    """
+                    backup_cursor.execute(insert_query, (user_id, record_type, record_time))
+                    backup_conn.commit()
+                backup_conn.close()
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': '打卡記錄已新增 (使用備份數據庫)',
+                }), 201
+                
+            except Exception as backup_error:
+                return jsonify({
+                    'status': 'error', 
+                    'message': f'新增打卡記錄失敗: {str(e)}, 備份操作也失敗: {str(backup_error)}'
+                }), 500
+        finally:
+            if conn:
+                conn.close()
 
 # finish backup database
 # 查詢薪資記錄

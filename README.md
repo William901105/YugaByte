@@ -106,6 +106,54 @@ You can see more information on https://hackmd.io/@WEIHUNGLIN/Bk8-pEnsyl
 	1.account : 帳號
 	2.password : 密碼
 
+# CLI 使用指南
+## cli.py
+	1.支援的action：register(註冊)、login(登入)、logout(登出)、status(狀態檢查)、clock(打卡)、records(記錄查詢)、salary(薪資查詢)
+	2.基本指令格式：python cli.py [action]
+	3.登入資訊儲存於/access_control_system/session.json
+
+## 示範指令(執行目錄為Yugabyte資料夾時)
+### 員工操作
+```bash
+# Jason登入(員工角色)
+python .\access_control_system\cli.py login
+# 輸入: Jason / Jason / employee
+
+# 執行打卡
+python .\access_control_system\cli.py clock
+# 輸入: i (上班打卡)
+# 輸入: o (下班打卡)
+
+# 查詢記錄與薪資
+python .\access_control_system\cli.py records
+python .\access_control_system\cli.py salary
+```
+
+### 主管操作
+```bash
+# Sally登入(主管角色)
+python .\access_control_system\cli.py login
+# 輸入: Sally / Sally / boss
+
+# John登入(主管角色)
+python .\access_control_system\cli.py login
+# 輸入: John / John / boss
+```
+
+### 通用操作
+```bash
+# 查看登入狀態
+python .\access_control_system\cli.py status
+
+# 登出系統
+python .\access_control_system\cli.py logout
+
+# 註冊新員工
+python .\access_control_system\cli.py register
+# 依提示輸入帳號、密碼及主管帳號
+```
+
+
 
 
 

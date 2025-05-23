@@ -161,7 +161,6 @@ def clock_in_out():
 
     # 確保 token 有效
     try:
-        # 將 POST 改為 GET
         response = requests.get(f"{BASE_URL}/authorization/authorize", json={
             "access_token": session["access_token"],
             "user_id": session["user_id"]
@@ -183,17 +182,26 @@ def clock_in_out():
     current_time = time.time()
     
     try:
-        response = requests.post(f"{BASE_URL}/record", json={
-            "user_id": session["user_id"],
-            "type": clock_type,
-            "time": current_time,
-            "duration": 0  # 假設 duration 預設為 0
-        })
+        # 設定 HTTP 標頭，包含認證資訊
+        headers = {
+            "Authorization": session["access_token"],
+            "X-User-ID": session["user_id"]
+        }
+        
+        # 改用 /employee/records 端點
+        response = requests.post(f"{BASE_URL}/employee/records", 
+            json={
+                "user_id": session["user_id"],
+                "type": clock_type,
+                "time": current_time
+            },
+            headers=headers
+        )
 
         if response.status_code == 200 or response.status_code == 201:
             result = response.json()
-            print(response.json())
             if result.get("status") == "success":
+                print(result)  # 顯示完整回應，可以用於偵錯
                 print(f"打卡成功！")
                 print(f"使用者: {session['user_id']}")
                 print(f"類型: {'上班' if clock_type == 'i' else '下班'}")
