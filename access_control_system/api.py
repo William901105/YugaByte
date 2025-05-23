@@ -221,7 +221,11 @@ def update_token(refresh_token, user_id):  # update the token function
 
 # run the app
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {
+    "origins": "*",
+    "methods": ["GET", "POST", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization", "X-User-ID"]
+}}, supports_credentials=True)
 
 
 # finish backup database
@@ -260,7 +264,7 @@ def run_update_token():
 # finish backup database
 
 
-@app.route('/record', methods=['GET', 'POST'])
+@app.route('/record', methods=['GET','POST'])
 def record_handler():
     if request.method == 'GET':
         # --- 取資料 Record & EmployeeAccount ---
@@ -396,7 +400,7 @@ def record_handler():
 # finish backup database
 
 
-@app.route('/salary/logs', methods=['GET'])  # 查詢日誌
+@app.route('/salary/logs', methods=['POST'])  # 查詢日誌
 def get_salary_logs():
     # get query parameters from request
     data = request.get_json()
@@ -551,7 +555,7 @@ def update_salary():
 # finish backup database
 
 
-@app.route('/salary/find', methods=['GET'])  # 查詢薪資
+@app.route('/salary/find', methods=['POST'])  # 查詢薪資
 def get_user_salary():
     """查詢薪資"""
     user_id = request.get_json().get('user_id')
@@ -653,7 +657,7 @@ def get_subordinates(boss_id, user_id, cursor):
 # finish backup database
 
 
-@app.route('/boss/subordinate_record', methods=['GET'])
+@app.route('/boss/subordinate_record', methods=['POST'])
 @verify_boss_access
 def get_subordinate_record():
     """
@@ -749,7 +753,7 @@ def get_subordinate_record():
 # finish backup database
 
 
-@app.route('/boss/subordinate_salary', methods=['GET'])
+@app.route('/boss/subordinate_salary', methods=['POST'])
 @verify_boss_access
 def subordinate_salary():
     """Verify if an employee is a subordinate of the requesting boss"""
@@ -1018,6 +1022,7 @@ def get_employee_records():
     需要提供 user_id (員工ID), start_time, end_time (查詢範圍)
     """
     data = request.get_json()
+    print(request.get_json())
     user_id = data.get('user_id')
     start_time = data.get('start_time')
     end_time = data.get('end_time')
@@ -1095,7 +1100,7 @@ def get_employee_records():
 # 查詢薪資記錄
 
 
-@app.route('/employee/salary', methods=['GET'])
+@app.route('/employee/salary', methods=['POST'])
 def get_employee_salary():
     """
     查詢薪資記錄

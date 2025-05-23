@@ -30,13 +30,17 @@ document.addEventListener('DOMContentLoaded', function () {
         timeDisplay.textContent = new Date().toLocaleString();
     }
     updateTime();
-    setInterval(updateTime, 1000);
-
-    // 驗證 token
+    setInterval(updateTime, 1000);    // 驗證 token
     async function verifyToken() {
         try {
+            console.log('發送 Token 驗證請求 - 方法: POST, URL: /authorization/authorize');
+            console.log('請求參數:', JSON.stringify({
+                access_token: accessToken,
+                user_id: userId
+            }));
+
             const response = await fetch('http://localhost:5000/authorization/authorize', {
-                method: 'GET',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     access_token: accessToken,
@@ -45,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const data = await response.json();
+            console.log('Token 驗證回應:', JSON.stringify(data));
             
             if (data.result === 'Expired') {
                 // Token 過期，嘗試刷新
@@ -56,12 +61,17 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Token 驗證錯誤:', error);
             return false;
         }
-    }
-
-    // 刷新 token
+    }    // 刷新 token
     async function refreshToken() {
         try {
             const refreshToken = localStorage.getItem('refresh_token');
+            
+            console.log('發送 Token 刷新請求 - 方法: POST, URL: /authorization/refreshToken');
+            console.log('請求參數:', JSON.stringify({
+                refresh_token: refreshToken,
+                user_id: userId
+            }));
+            
             const response = await fetch('http://localhost:5000/authorization/refreshToken', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -72,6 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const data = await response.json();
+            console.log('Token 刷新回應:', JSON.stringify(data));
             
             if (response.ok) {
                 localStorage.setItem('access_token', data.new_access_token);
@@ -100,21 +111,26 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!isValid) {
                 throw new Error('認證已過期，請重新登入');
             }
-            
-            // 呼叫打卡 API
+              // 呼叫打卡 API
             const currentTime = Math.floor(Date.now() / 1000);
+            const requestBody = {
+                user_id: userId,
+                type: type,
+                time: currentTime,
+                duration: type === 'i' ? 0 : 28800 // 下班時預設工作8小時
+            };
+            
+            console.log('發送打卡請求 - 方法: POST, URL: /record');
+            console.log('請求參數:', JSON.stringify(requestBody));
+            
             const response = await fetch('http://localhost:5000/record', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userId,
-                    type: type,
-                    time: currentTime,
-                    duration: type === 'i' ? 0 : 28800 // 下班時預設工作8小時
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();
+            console.log('打卡回應:', JSON.stringify(data));
 
             if (data.status !== 'success') {
                 throw new Error(data.message || '打卡失敗');
@@ -136,12 +152,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             `;
             retryButton.style.display = 'block';
-            
-            if (error.message.includes('認證已過期')) {
+              if (error.message.includes('認證已過期')) {
                 localStorage.clear();
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 2000);
+                console.log('認證已過期，但不會自動跳轉，便於查看錯誤');
+                // 註解掉自動跳轉，方便查看錯誤
+                // setTimeout(() => {
+                //    window.location.href = 'index.html';
+                // }, 2000);
             }
         } finally {
             clockButton.disabled = false;

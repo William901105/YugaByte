@@ -68,19 +68,23 @@ document.addEventListener('DOMContentLoaded', function () {
         registerButton.disabled = true;
         registerButton.textContent = '註冊中...';
 
-        try {
-            // 發送註冊請求到後端 API
+        try {            // 發送註冊請求到後端 API
+            const requestBody = { 
+                account: username,
+                password: password,
+                boss_id: bossId
+            };
+            console.log('發送註冊請求 - 方法: POST, URL: /employee/register');
+            console.log('請求參數:', JSON.stringify(requestBody));
+            
             const res = await fetch('http://localhost:5000/employee/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    account: username,
-                    password: password,
-                    boss_id: bossId
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const result = await res.json();
+            console.log('註冊回應:', JSON.stringify(result));
 
             if (res.ok && result.status === 'success') {
                alert('註冊成功！請前往登入頁面。');

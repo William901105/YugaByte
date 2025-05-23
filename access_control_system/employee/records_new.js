@@ -34,13 +34,17 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // 設置一個月前作為開始日期的預設值
     const oneMonthAgo = new Date(today.setMonth(today.getMonth() - 1));
-    startDateInput.value = oneMonthAgo.toISOString().split('T')[0];
-
-    // 驗證 token
+    startDateInput.value = oneMonthAgo.toISOString().split('T')[0];    // 驗證 token
     async function verifyToken() {
         try {
+            console.log('發送 Token 驗證請求 - 方法: POST, URL: /authorization/authorize');
+            console.log('請求參數:', JSON.stringify({
+                access_token: accessToken,
+                user_id: userId
+            }));
+
             const response = await fetch('http://localhost:5000/authorization/authorize', {
-                method: 'GET',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     access_token: accessToken,
@@ -49,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const data = await response.json();
+            console.log('Token 驗證回應:', JSON.stringify(data));
             
             if (data.result === 'Expired') {
                 // Token 過期，嘗試刷新
@@ -60,12 +65,17 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Token 驗證錯誤:', error);
             return false;
         }
-    }
-
-    // 刷新 token
+    }    // 刷新 token
     async function refreshToken() {
         try {
             const refreshToken = localStorage.getItem('refresh_token');
+            
+            console.log('發送 Token 刷新請求 - 方法: POST, URL: /authorization/refreshToken');
+            console.log('請求參數:', JSON.stringify({
+                refresh_token: refreshToken,
+                user_id: userId
+            }));
+            
             const response = await fetch('http://localhost:5000/authorization/refreshToken', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -76,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const data = await response.json();
+            console.log('Token 刷新回應:', JSON.stringify(data));
             
             if (response.ok) {
                 localStorage.setItem('access_token', data.new_access_token);
@@ -104,24 +115,32 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // 轉換日期格式為時間戳
             const start = Math.floor(new Date(startDate).getTime() / 1000);
-            const end = Math.floor(new Date(endDate).getTime() / 1000 + 86399); // 加上一天減1秒
-
-            // 查詢員工打卡記錄
+            const end = Math.floor(new Date(endDate).getTime() / 1000 + 86399); // 加上一天減1秒            // 查詢員工打卡記錄
+            const requestBody = {
+                user_id: userId,
+                start_time: start,
+                end_time: end
+            };
+            console.log('發送打卡記錄查詢請求 - 方法: POST, URL: /employee/records');
+            console.log('請求參數:', JSON.stringify(requestBody));
+            console.log('請求頭:', JSON.stringify({
+                'Content-Type': 'application/json',
+                'Authorization': accessToken,
+                'X-User-ID': userId
+            }));
+            
             const response = await fetch('http://localhost:5000/employee/records', {
-                method: 'GET',
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': accessToken,
                     'X-User-ID': userId
                 },
-                body: JSON.stringify({
-                    user_id: userId,
-                    start_time: start,
-                    end_time: end
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();
+            console.log('打卡記錄查詢回應:', JSON.stringify(data));
             
             if (data.status !== 'success') {
                 throw new Error(data.message || '查詢失敗');
@@ -156,12 +175,13 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('查詢打卡記錄錯誤:', error);
             errorMessage.textContent = error.message;
             errorMessage.style.display = 'block';
-            
-            if (error.message.includes('認證已過期')) {
+              if (error.message.includes('認證已過期')) {
                 localStorage.clear();
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 2000);
+                console.log('認證已過期，但不會自動跳轉，便於查看錯誤');
+                // 註解掉自動跳轉，方便查看錯誤
+                // setTimeout(() => {
+                //    window.location.href = 'index.html';
+                // }, 2000);
             }
         } finally {
             loadingIndicator.style.display = 'none';

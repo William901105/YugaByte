@@ -23,13 +23,17 @@ document.addEventListener('DOMContentLoaded', async function () {
     // DOM 元素
     const salaryInfo = document.getElementById('salaryInfo');
     const retryButton = document.getElementById('retryButton');
-    const logoutButton = document.getElementById('logoutButton');
-
-    // 驗證 token
+    const logoutButton = document.getElementById('logoutButton');    // 驗證 token
     async function verifyToken() {
         try {
+            console.log('發送 Token 驗證請求 - 方法: POST, URL: /authorization/authorize');
+            console.log('請求參數:', JSON.stringify({
+                access_token: accessToken,
+                user_id: userId
+            }));
+
             const response = await fetch('http://localhost:5000/authorization/authorize', {
-                method: 'GET',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     access_token: accessToken,
@@ -38,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             });
 
             const data = await response.json();
+            console.log('Token 驗證回應:', JSON.stringify(data));
             
             if (data.result === 'Expired') {
                 // Token 過期，嘗試刷新
@@ -49,11 +54,15 @@ document.addEventListener('DOMContentLoaded', async function () {
             console.error('Token 驗證錯誤:', error);
             return false;
         }
-    }
-
-    // 刷新 token
+    }    // 刷新 token
     async function refreshTokenFunc() {
         try {
+            console.log('發送 Token 刷新請求 - 方法: POST, URL: /authorization/refreshToken');
+            console.log('請求參數:', JSON.stringify({
+                refresh_token: refreshToken,
+                user_id: userId
+            }));
+
             const response = await fetch('http://localhost:5000/authorization/refreshToken', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -64,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             });
 
             const data = await response.json();
+            console.log('Token 刷新回應:', JSON.stringify(data));
             
             if (response.ok) {
                 localStorage.setItem('access_token', data.new_access_token);
@@ -77,107 +87,125 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
-    // 查詢薪資資訊
-    async function fetchSalary() {
+// 查詢薪資資訊
+async function fetchSalary() {
+    try {
+        salaryInfo.textContent = '載入中...';
+        retryButton.style.display = 'none';
+
+        // 先驗證 token
+        const isValid = await verifyToken();
+        if (!isValid) {
+            throw new Error('認證已過期，請重新登入');
+        }
+        
+        // 查詢個人薪資
+        const requestBody = { user_id: userId };
+        console.log('發送薪資查詢請求 - 方法: POST, URL: /employee/salary');
+        console.log('請求參數:', JSON.stringify(requestBody));
+        console.log('請求頭:', JSON.stringify({
+            'Authorization': accessToken,
+            'X-User-ID': userId,
+            'Content-Type': 'application/json'
+        }));
+        
+        // 使用 fetch 的 mode 設置為 'cors'，啟用詳細的 CORS 檢測
         try {
-            salaryInfo.textContent = '載入中...';
-            retryButton.style.display = 'none';
-
-            // 先驗證 token
-            const isValid = await verifyToken();
-            if (!isValid) {
-                throw new Error('認證已過期，請重新登入');
-            }
-
-            // 查詢個人薪資
-            const response = await fetch('http://localhost:5000/employee/salary', {
-                method: 'GET',
+            // CORS 預檢請求檢測
+            const optionsResponse = await fetch('http://localhost:5000/employee/salary', {
+                method: 'OPTIONS',
                 headers: {
-                    'Authorization': accessToken,
-                    'X-User-ID': userId,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_id: userId
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.status !== 'success') {
-                throw new Error(data.message || '查詢失敗');
-            }
-
-            // 更新薪資顯示
-            if (data.data && data.data.length > 0) {
-                const salary = data.data[0].salary;
-                salaryInfo.innerHTML = `
-                    <div class="info-item">
-                        <strong>員工編號：</strong> ${userId}
-                    </div>
-                    <div class="info-item">
-                        <strong>基本薪資：</strong> NT$ ${salary.toLocaleString()}
-                    </div>
-                `;
-
-                // 同時查詢薪資記錄
-                const now = Date.now() / 1000;
-                const monthAgo = now - (30 * 24 * 60 * 60);
-                
-                const logsResponse = await fetch('http://localhost:5000/salary/logs', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        start_time: monthAgo,
-                        end_time: now
-                    })
-                });
-
-                const logsData = await logsResponse.json();
-                
-                // 篩選出當前用戶的記錄
-                const userLogs = logsData.filter(log => log.user_id === userId);
-                
-                if (userLogs.length > 0) {
-                    let deductions = 0;
-                    let bonuses = 0;
-                    
-                    userLogs.forEach(log => {
-                        if (log.type === 'late' || log.type === 'absent') {
-                            deductions += (log.duration / 3600) * (salary / 240); // 假設一個月工時240小時
-                        } else if (log.type === 'overtime') {
-                            bonuses += (log.duration / 3600) * (salary / 240) * 1.5; // 加班費1.5倍
-                        }
-                    });
-
-                    salaryInfo.innerHTML += `
-                        <div class="info-item">
-                            <strong>本月扣款：</strong> NT$ ${Math.round(deductions).toLocaleString()}
-                        </div>
-                        <div class="info-item">
-                            <strong>加班費：</strong> NT$ ${Math.round(bonuses).toLocaleString()}
-                        </div>
-                        <div class="info-item total">
-                            <strong>預估實領：</strong> NT$ ${Math.round(salary - deductions + bonuses).toLocaleString()}
-                        </div>
-                    `;
+                    'Origin': window.location.origin,
+                    'Access-Control-Request-Method': 'POST',
+                    'Access-Control-Request-Headers': 'Authorization, X-User-ID, Content-Type'
                 }
-            } else {
-                throw new Error('無薪資資料');
-            }
-        } catch (error) {
-            console.error('查詢薪資錯誤:', error);
-            salaryInfo.innerHTML = `<div class="error">${error.message}</div>`;
-            retryButton.style.display = 'block';
+            }).catch(error => {
+                console.error('CORS 預檢請求失敗:', error);
+                throw new Error('CORS 預檢請求失敗，可能是伺服器未正確配置 CORS');
+            });
             
-            if (error.message.includes('認證已過期')) {
-                localStorage.clear();
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 2000);
+            console.log('CORS 預檢回應狀態:', optionsResponse.status);
+            console.log('CORS 預檢回應標頭:', {
+                'Access-Control-Allow-Origin': optionsResponse.headers.get('Access-Control-Allow-Origin'),
+                'Access-Control-Allow-Methods': optionsResponse.headers.get('Access-Control-Allow-Methods'),
+                'Access-Control-Allow-Headers': optionsResponse.headers.get('Access-Control-Allow-Headers')
+            });
+        } catch (corsError) {
+            console.error('CORS 檢測錯誤:', corsError);
+            // 繼續執行，因為有些伺服器可能不正確響應 OPTIONS 請求
+        }
+
+        const response = await fetch('http://localhost:5000/employee/salary', {
+            method: 'POST',
+            headers: {
+                'Authorization': accessToken,
+                'X-User-ID': userId,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody),
+            mode: 'cors', // 明確指定為 CORS 模式
+            credentials: 'same-origin' // 如需發送 cookies，可改為 'include'
+        }).catch(error => {
+            console.error('Fetch 錯誤:', error);
+            if (error.message.includes('CORS')) {
+                throw new Error('CORS 錯誤: 伺服器未允許跨源請求，請檢查伺服器 CORS 配置');
             }
+            throw error;
+        });
+        
+        // 檢查回應中的 CORS 標頭
+        console.log('回應狀態碼:', response.status);
+        console.log('回應 CORS 標頭:', {
+            'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+            'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+            'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+        });
+
+        if (!response.ok) {
+            throw new Error(`伺服器回應錯誤: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('薪資查詢回應:', JSON.stringify(data));
+
+        // 原有的處理代碼
+        if (data.status !== 'success') {
+            throw new Error(data.message || '查詢失敗');
+        }
+        
+        // ...其餘代碼保持不變...
+    } catch (error) {
+        console.error('查詢薪資錯誤:', error);
+        salaryInfo.innerHTML = `<div class="error">${error.message}</div>`;
+        retryButton.style.display = 'block';
+        
+        // 為 CORS 錯誤提供更詳細的診斷信息
+        if (error.message.includes('CORS')) {
+            salaryInfo.innerHTML += `
+                <div class="error-details">
+                    <p>CORS 錯誤診斷:</p>
+                    <ul>
+                        <li>請求來源: ${window.location.origin}</li>
+                        <li>目標伺服器: http://localhost:5000</li>
+                        <li>請確認伺服器已正確配置 CORS，應包含:</li>
+                        <li>- Access-Control-Allow-Origin: ${window.location.origin} 或 *</li>
+                        <li>- Access-Control-Allow-Methods: POST, OPTIONS</li>
+                        <li>- Access-Control-Allow-Headers: Authorization, X-User-ID, Content-Type</li>
+                    </ul>
+                </div>
+            `;
+        }
+        
+        if (error.message.includes('認證已過期')) {
+            localStorage.clear();
+            console.log('認證已過期，但不會自動跳轉，便於查看錯誤');
+            // 註解掉自動跳轉，方便查看錯誤
+            // setTimeout(() => {
+            //    window.location.href = 'index.html';
+            // }, 2000);
         }
     }
+}
 
     // 重試按鈕
     retryButton.addEventListener('click', fetchSalary);

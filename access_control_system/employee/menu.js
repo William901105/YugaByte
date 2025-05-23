@@ -27,15 +27,10 @@
 
 document.addEventListener('DOMContentLoaded', function () {
     const userId = localStorage.getItem('user_id');
-    accessToken = localStorage.getItem('access_token');
-    refreshToken = localStorage.getItem('refresh_token');
+    const accessToken = localStorage.getItem('access_token');
+    const refreshToken = localStorage.getItem('refresh_token');
     const role = localStorage.getItem('role');
 
-    if (!userId || !accessToken || !refreshToken || !role) {
-        alert('未登入，請重新登入');
-        window.location.href = 'index.html';
-        return;
-    }
 
     document.getElementById('logoutButton').addEventListener('click', function () {
         localStorage.clear();
