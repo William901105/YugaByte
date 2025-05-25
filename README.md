@@ -121,6 +121,7 @@ employeeUI.py 是一個整合了命令列功能和互動式界面的員工系統
 # 進入互動模式（預設）
 python .\access_control_system\employeeUI.py
 
+
 # 使用命令列模式
 python .\access_control_system\employeeUI.py [action]
 # 其中 [action] 可以是：register、login、logout、status、clock、records、salary、interactive

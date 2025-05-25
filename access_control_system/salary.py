@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 
 def get_base_salary(user_id):
-    response = requests.get(f'http://localhost:5000/salary/find', json={
+    response = requests.post(f'http://localhost:5000/salary/find', json={
         "user_id": user_id})
     if response.status_code == 200:
         data = response.json()
@@ -15,7 +15,7 @@ def get_base_salary(user_id):
 
 
 def get_logs(start_time, end_time):
-    response = requests.get('http://localhost:5000/salary/logs', json={
+    response = requests.post('http://localhost:5000/salary/logs', json={
         "start_time": start_time,
         "end_time": end_time
     })
@@ -33,12 +33,11 @@ def update_salary(user_id, type, duration):
         base_salary = base_salary - 300
     elif type == 'overtime':
         base_salary = base_salary + (10*1.5*duration/60)
-
+    time.sleep(1)  # 模擬延遲，避免過於頻繁的請求
     response = requests.post('http://localhost:5000/salary/update', json={
         "user_id": user_id,
         "salary": base_salary
     })
-
     if response.status_code == 200:
         print(f"薪資更新成功，使用者 {user_id} 的新薪資為 {base_salary}")
         return response.json()
@@ -73,29 +72,3 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             print("手動中斷，退出系統")
             exit(0)
-    """
-    start_date_str = input("請輸入起始日期 (YYYY-MM-DD) [Enter預設昨天]: ").strip()
-    end_date_str = input("請輸入結束日期 (YYYY-MM-DD) [Enter預設昨天]: ").strip()
-
-    if start_date_str and end_date_str:
-        start_time = date_to_timestamp(start_date_str)
-        end_time = date_to_timestamp(end_date_str, end_of_day=True)
-    else:
-        yesterday = datetime.now() - timedelta(days=1)
-        start_time = date_to_timestamp(yesterday.strftime("%Y-%m-%d"))
-        end_time = date_to_timestamp(
-            yesterday.strftime("%Y-%m-%d"), end_of_day=True)
-
-    print(f"分析時間區間: {start_time} ~ {end_time} (含結束日整天)")
-    logs = get_logs(start_time, end_time)
-
-    processed_users = set()
-    for log in logs:
-        user_id = log['user_id']
-        if user_id not in processed_users:
-            user_logs = [l for l in logs if l['user_id'] == user_id]
-            base_salary = get_base_salary(user_id)
-            result = update_salary(user_id, base_salary, user_logs)
-            print(f"已更新 {user_id} 薪資結果: {result}")
-            processed_users.add(user_id)
-    """

@@ -497,11 +497,18 @@ def update_salary():
             'SELECT user_id, salary FROM salary WHERE user_id = %s', (user_id,))
 
         result = curs.fetchall()
-        curss = conn.cursor()
+        conn.commit()
+        conn.close()
+
         if result:
             # update existing record
-            curss.execute(
+            conn = get_db_connection()
+            curs = conn.cursor()
+            curs.execute(
                 'UPDATE salary SET salary = %s WHERE user_id = %s', (salary, user_id,))
+            conn.commit()
+            conn.close()
+            print("Salary updated successfully in Main YugabyteDB.")
             # backup database
             try:
                 backup_conn = get_backup_db_connection()
@@ -516,8 +523,12 @@ def update_salary():
                 print(e)
         else:
             # insert new record
-            curss.execute(
+            conn = get_db_connection()
+            curs = conn.cursor()
+            curs.execute(
                 'INSERT INTO salary (user_id, salary) VALUES (%s, %s)', (user_id, salary,))
+            conn.commit()
+            conn.close()
             # backup database
             try:
                 backup_conn = get_backup_db_connection()
@@ -531,8 +542,7 @@ def update_salary():
                 print("Exception while updating in Backup YugabyteDB")
                 print(e)
 
-        conn.commit()
-        conn.close()
+        print("Salary updated successfully in Main YugabyteDB.")
         return jsonify({"message": "Salary updated successfully"}), 200
 
     except Exception as e:
