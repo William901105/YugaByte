@@ -1,0 +1,724 @@
+/* 
+   員工管理系統樣式
+   包含登入、註冊、打卡、記錄查詢和薪資查詢的所有樣式
+*/
+
+/* === 全局樣式 === */
+:root {
+    --primary-color: #4a6fa5;
+    --primary-light: #6a8ec3;
+    --primary-dark: #344e78;
+    --secondary-color: #e4f0ff;
+    --accent-color: #ff7e47;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --gray-color: #6c757d;
+    --gray-light: #e9ecef;
+    --body-bg: #f5f7fb;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+        Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+body {
+    background-color: var(--body-bg);
+    color: var(--dark-color);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+button {
+    cursor: pointer;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* === 應用容器 === */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* === 側邊欄 === */
+.sidebar {
+    width: 250px;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+    box-shadow: 2px 0 5px var(--shadow-color);
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--primary-light);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sidebar-header i {
+    font-size: 1.5rem;
+}
+
+.sidebar-menu {
+    flex: 1;
+    padding: 1rem 0;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    color: var(--secondary-color);
+    text-decoration: none;
+    gap: 12px;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.menu-item i {
+    width: 20px;
+    text-align: center;
+}
+
+.menu-item:hover {
+    background-color: var(--primary-light);
+    color: white;
+}
+
+.menu-item.active {
+    background-color: var(--primary-dark);
+    border-left-color: var(--accent-color);
+    color: white;
+}
+
+.sidebar-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--primary-light);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+#user-info i {
+    font-size: 1.2rem;
+}
+
+#logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background-color: var(--primary-dark);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.9rem;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+}
+
+#logout-btn:hover {
+    background-color: var(--danger-color);
+}
+
+/* === 內容區域 === */
+.content {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    position: relative;
+}
+
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+.page h1 {
+    margin-bottom: 1.5rem;
+    color: var(--primary-dark);
+}
+
+/* === 表單樣式 === */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-light);
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.2);
+}
+
+/* === 按鈕樣式 === */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.2s ease;
+    gap: 8px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* === 身份驗證樣式 === */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 3rem);
+}
+
+.auth-box {
+    width: 100%;
+    max-width: 400px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    overflow: hidden;
+}
+
+.auth-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.auth-tab:hover {
+    background-color: var(--secondary-color);
+}
+
+.auth-tab.active {
+    background-color: white;
+    border-bottom: 2px solid var(--primary-color);
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.auth-content {
+    padding: 1.5rem;
+}
+
+.auth-form {
+    display: none;
+}
+
+.auth-form.active {
+    display: block;
+}
+
+.auth-form h2 {
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: var(--primary-dark);
+}
+
+.status-message {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    text-align: center;
+    border-radius: 4px;
+}
+
+/* === 歡迎頁面樣式 === */
+.welcome-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 3rem);
+}
+
+.welcome-box {
+    width: 100%;
+    max-width: 800px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    padding: 2rem;
+    text-align: center;
+}
+
+.welcome-box h1 {
+    color: var(--primary-color);
+    margin-bottom: 2rem;
+}
+
+.welcome-info {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.info-card {
+    flex: 1;
+    background-color: var(--secondary-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.info-icon {
+    font-size: 2rem;
+    color: var(--primary-color);
+}
+
+.info-content {
+    text-align: left;
+}
+
+.info-content h3 {
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem;
+}
+
+.welcome-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.action-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--secondary-color);
+    color: var(--primary-dark);
+    font-weight: 500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.action-btn i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.action-btn:hover {
+    background-color: var(--primary-light);
+    color: white;
+    transform: translateY(-3px);
+}
+
+.action-btn:hover i {
+    color: white;
+}
+
+/* === 打卡頁面樣式 === */
+.clock-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.clock-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    padding: 2rem;
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+
+.clock-time-display {
+    margin-bottom: 2rem;
+}
+
+#current-time {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem;
+}
+
+#current-date {
+    font-size: 1.2rem;
+    color: var(--gray-color);
+}
+
+.clock-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.clock-status {
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.clock-history {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    padding: 1.5rem;
+}
+
+.clock-history h2 {
+    margin-bottom: 1.5rem;
+    color: var(--primary-dark);
+    border-bottom: 1px solid var(--gray-light);
+    padding-bottom: 0.5rem;
+}
+
+.records-list {
+    min-height: 150px;
+    position: relative;
+}
+
+/* === 記錄查詢頁面樣式 === */
+.records-filter {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    padding: 1.5rem;
+    align-items: flex-end;
+}
+
+.records-filter .form-group {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.records-results {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    padding: 1.5rem;
+    min-height: 300px;
+    position: relative;
+}
+
+.records-table-container {
+    overflow-x: auto;
+}
+
+.records-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.records-table th, 
+.records-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.records-table th {
+    background-color: var(--secondary-color);
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.records-table tbody tr:hover {
+    background-color: var(--gray-light);
+}
+
+/* === 薪資頁面樣式 === */
+.salary-container {
+    display: flex;
+    justify-content: center;
+    min-height: 300px;
+    position: relative;
+}
+
+.salary-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    width: 100%;
+    max-width: 500px;
+    overflow: hidden;
+}
+
+.salary-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.salary-header i {
+    font-size: 1.5rem;
+}
+
+.salary-header h2 {
+    margin-bottom: 0;
+}
+
+.salary-content {
+    padding: 2rem;
+}
+
+.salary-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.info-label {
+    color: var(--gray-color);
+    font-weight: 500;
+}
+
+.info-value {
+    font-weight: 600;
+}
+
+.info-value.highlight {
+    font-size: 1.5rem;
+    color: var(--success-color);
+}
+
+.salary-footer {
+    padding: 1rem 2rem;
+    background-color: var(--gray-light);
+    text-align: right;
+    font-size: 0.9rem;
+    color: var(--gray-color);
+}
+
+/* === 加載動畫 === */
+.loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--gray-light);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.no-data-message {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gray-color);
+    font-style: italic;
+}
+
+/* === 通知提示框 === */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.toast {
+    margin-top: 0.5rem;
+    padding: 1rem;
+    border-radius: 4px;
+    background-color: white;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+    max-width: 350px;
+}
+
+.toast-success {
+    border-left: 4px solid var(--success-color);
+}
+
+.toast-error {
+    border-left: 4px solid var(--danger-color);
+}
+
+.toast-info {
+    border-left: 4px solid var(--info-color);
+}
+
+.toast i {
+    font-size: 1.2rem;
+}
+
+.toast-success i {
+    color: var(--success-color);
+}
+
+.toast-error i {
+    color: var(--danger-color);
+}
+
+.toast-info i {
+    color: var(--info-color);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* === 響應式設計 === */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+    }
+    
+    .sidebar-menu {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 0.5rem;
+    }
+    
+    .menu-item {
+        flex: 1;
+        min-width: 120px;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+    }
+    
+    .menu-item.active {
+        border-left-color: transparent;
+        border-bottom-color: var(--accent-color);
+    }
+    
+    .welcome-info {
+        flex-direction: column;
+    }
+    
+    .clock-buttons {
+        flex-direction: column;
+    }
+    
+    .records-filter {
+        flex-direction: column;
+    }
+}

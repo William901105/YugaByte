@@ -1,43 +1,248 @@
-<!--
-此頁面為員工系統的登入頁面
-功能：
-1. 提供帳號密碼登入介面
-2. 支援"記住我"功能
-3. 包含前往註冊頁面的連結
-4. 具有密碼顯示/隱藏切換功能
--->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登入 | 歡迎回來</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>員工管理系統</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="login-card">
-            <div class="login-header">
-                <h1>歡迎回來</h1>
-                <p>請登入您的帳戶</p>
-            </div>            <form id="loginForm" class="login-form">
-                <div class="form-group">
-                    <input type="text" id="userId" required>
-                    <label for="userId">帳號</label>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-building"></i>
+                <h2>員工系統</h2>
+            </div>
+            <div class="sidebar-menu">
+                <a href="#" class="menu-item active" data-page="home">
+                    <i class="fas fa-home"></i>
+                    <span>首頁</span>
+                </a>
+                <a href="#" class="menu-item" data-page="clock">
+                    <i class="fas fa-clock"></i>
+                    <span>打卡</span>
+                </a>
+                <a href="#" class="menu-item" data-page="records">
+                    <i class="fas fa-history"></i>
+                    <span>打卡記錄</span>
+                </a>
+                <a href="#" class="menu-item" data-page="salary">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>薪資查詢</span>
+                </a>
+            </div>
+            <div class="sidebar-footer">
+                <div id="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="username">未登入</span>
                 </div>
-                <div class="form-group">
-                    <input type="password" id="password" required>
-                    <label for="password">密碼</label>
-                    <button type="button" class="toggle-password" aria-label="切換密碼顯示"></button>
-                </div>
-                <button type="submit" class="login-button">登入</button>
-            </form>
-            <div class="login-footer">
-                <p>還沒有帳戶？ <a href="register.html">立即註冊</a></p>
+                <button id="logout-btn" class="hidden">
+                    <i class="fas fa-sign-out-alt"></i>
+                    登出
+                </button>
             </div>
         </div>
+
+        <div class="content">
+            <div id="home-page" class="page active">
+                <div class="auth-container">
+                    <div class="auth-box">
+                        <div class="auth-tabs">
+                            <div class="auth-tab active" data-tab="login">登入</div>
+                            <div class="auth-tab" data-tab="register">註冊</div>
+                        </div>
+                        <div class="auth-content">
+                            <div id="login-form" class="auth-form active">
+                                <h2>員工登入</h2>
+                                <div class="form-group">
+                                    <label for="login-account">帳號</label>
+                                    <input type="text" id="login-account" class="form-input" placeholder="請輸入您的帳號">
+                                </div>
+                                <div class="form-group">
+                                    <label for="login-password">密碼</label>
+                                    <input type="password" id="login-password" class="form-input" placeholder="請輸入您的密碼">
+                                </div>
+                                <div class="form-group">
+                                    <label for="login-role">角色</label>
+                                    <select id="login-role" class="form-input">
+                                        <option value="employee" selected>員工</option>
+                                        <option value="boss">主管</option>
+                                    </select>
+                                </div>
+                                <button id="login-button" class="btn btn-primary">登入</button>
+                                <div class="status-message" id="login-message"></div>
+                            </div>
+                            <div id="register-form" class="auth-form">
+                                <h2>員工註冊</h2>
+                                <div class="form-group">
+                                    <label for="register-account">帳號</label>
+                                    <input type="text" id="register-account" class="form-input" placeholder="請設定帳號">
+                                </div>
+                                <div class="form-group">
+                                    <label for="register-password">密碼</label>
+                                    <input type="password" id="register-password" class="form-input" placeholder="請設定密碼">
+                                </div>
+                                <div class="form-group">
+                                    <label for="register-boss">主管帳號</label>
+                                    <input type="text" id="register-boss" class="form-input" placeholder="請輸入主管帳號">
+                                </div>
+                                <button id="register-button" class="btn btn-primary">註冊</button>
+                                <div class="status-message" id="register-message"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="welcome-container hidden">
+                    <div class="welcome-box">
+                        <h1>歡迎使用員工管理系統</h1>
+                        <div class="welcome-info">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="info-content">
+                                    <h3>使用者資訊</h3>
+                                    <p>用戶：<span id="welcome-username"></span></p>
+                                    <p>角色：<span id="welcome-role"></span></p>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="info-content">
+                                    <h3>今日狀態</h3>
+                                    <p id="today-clock-status">尚未打卡</p>
+                                    <p id="today-clock-time"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="welcome-actions">
+                            <button class="action-btn" data-page="clock">
+                                <i class="fas fa-clock"></i>
+                                立即打卡
+                            </button>
+                            <button class="action-btn" data-page="records">
+                                <i class="fas fa-history"></i>
+                                查看記錄
+                            </button>
+                            <button class="action-btn" data-page="salary">
+                                <i class="fas fa-money-bill-wave"></i>
+                                查看薪資
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="clock-page" class="page">
+                <h1>員工打卡</h1>
+                <div class="clock-container">
+                    <div class="clock-card">
+                        <div class="clock-time-display">
+                            <div id="current-time">--:--:--</div>
+                            <div id="current-date">-- 月 -- 日 星期 -</div>
+                        </div>
+                        <div class="clock-buttons">
+                            <button id="clock-in-btn" class="btn btn-success">
+                                <i class="fas fa-sign-in-alt"></i> 上班打卡
+                            </button>
+                            <button id="clock-out-btn" class="btn btn-danger">
+                                <i class="fas fa-sign-out-alt"></i> 下班打卡
+                            </button>
+                        </div>
+                        <div class="clock-status" id="clock-status-message"></div>
+                    </div>
+                </div>
+                <div class="clock-history">
+                    <h2>今日打卡記錄</h2>
+                    <div id="today-records" class="records-list">
+                        <div class="loading-spinner" id="today-records-loading">
+                            <div class="spinner"></div>
+                            <span>載入中...</span>
+                        </div>
+                        <div id="today-records-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="records-page" class="page">
+                <h1>打卡記錄查詢</h1>
+                <div class="records-filter">
+                    <div class="form-group">
+                        <label for="records-start-date">起始日期</label>
+                        <input type="date" id="records-start-date" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="records-end-date">結束日期</label>
+                        <input type="date" id="records-end-date" class="form-input">
+                    </div>
+                    <button id="query-records-btn" class="btn btn-primary">查詢</button>
+                </div>
+                <div class="records-results">
+                    <div class="loading-spinner" id="records-loading">
+                        <div class="spinner"></div>
+                        <span>載入中...</span>
+                    </div>
+                    <div id="records-container" class="records-table-container">
+                        <table class="records-table">
+                            <thead>
+                                <tr>
+                                    <th>序號</th>
+                                    <th>日期</th>
+                                    <th>時間</th>
+                                    <th>類型</th>
+                                </tr>
+                            </thead>
+                            <tbody id="records-table-body">
+                                <!-- 記錄會動態加入此處 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="no-records-message" class="no-data-message hidden">
+                        查無指定時間範圍內的打卡記錄
+                    </div>
+                </div>
+            </div>
+
+            <div id="salary-page" class="page">
+                <h1>薪資查詢</h1>
+                <div class="salary-container">
+                    <div class="loading-spinner" id="salary-loading">
+                        <div class="spinner"></div>
+                        <span>載入中...</span>
+                    </div>
+                    <div id="salary-card" class="salary-card hidden">
+                        <div class="salary-header">
+                            <i class="fas fa-money-check-alt"></i>
+                            <h2>薪資資訊</h2>
+                        </div>
+                        <div class="salary-content">
+                            <div class="salary-info">
+                                <div class="info-label">員工編號</div>
+                                <div id="salary-user-id" class="info-value">--</div>
+                            </div>
+                            <div class="salary-info">
+                                <div class="info-label">基本薪資</div>
+                                <div id="salary-amount" class="info-value highlight">--</div>
+                            </div>
+                        </div>
+                        <div class="salary-footer">
+                            <div class="salary-date">更新時間: <span id="salary-update-time"></span></div>
+                        </div>
+                    </div>
+                    <div id="no-salary-message" class="no-data-message hidden">
+                        目前查無薪資資訊
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="toast-container" class="toast-container"></div>
     </div>
-    <script src="index.js"></script>
+
+    <script src="script.js"></script>
 </body>
 </html>

@@ -111,9 +111,67 @@ You can see more information on https://hackmd.io/@WEIHUNGLIN/Bk8-pEnsyl
 	1.支援的action：register(註冊)、login(登入)、logout(登出)、status(狀態檢查)、clock(打卡)、records(記錄查詢)、salary(薪資查詢)
 	2.基本指令格式：python cli.py [action]
 	3.登入資訊儲存於/access_control_system/session.json
+	4.注意：cli.py 目前僅用於單元測試，實際使用請參考以下 employeeUI.py 的說明
 
-## 示範指令(執行目錄為Yugabyte資料夾時)
-### 員工操作
+## employeeUI.py 使用指南
+employeeUI.py 是一個整合了命令列功能和互動式界面的員工系統，結合了即時通知功能。
+
+### 啟動方式
+```bash
+# 進入互動模式（預設）
+python .\access_control_system\employeeUI.py
+
+# 使用命令列模式
+python .\access_control_system\employeeUI.py [action]
+# 其中 [action] 可以是：register、login、logout、status、clock、records、salary、interactive
+```
+
+### 互動模式功能
+1. **啟動時顯示歡迎選單**
+   - 登入系統
+   - 註冊新員工
+   - 退出程式（隱藏功能）
+
+2. **登入後的主選單**
+   - 打卡（上班/下班）
+   - 查詢打卡記錄
+   - 查詢薪資
+   - 查詢登入狀態
+   - 查看通知（有新通知時會標記）
+   - 登出系統
+   - 退出程式（隱藏功能）
+
+3. **特色功能**
+   - MQTT 即時通知功能
+   - 自動保存登入狀態
+   - Token 自動更新機制
+   - 支援多種時間格式輸入
+
+### 示範操作
+```bash
+# 啟動互動模式
+python .\access_control_system\employeeUI.py
+
+# 選擇 1 登入系統，輸入帳號密碼
+# 例如: Jason / Jason
+
+# 登入成功後，選擇功能編號使用對應功能
+# 1: 打卡
+# 2: 查詢打卡記錄
+# 3: 查詢薪資
+# 4: 查詢登入狀態
+# 5: 查看通知
+# 6: 登出系統
+# 0: 退出程式（隱藏功能，與登出的差異在會保留登入資訊，下次打開會跳過登入）
+```
+
+### 註意事項
+1. 登入資訊儲存於 /access_control_system/employee_session.json
+2. 通知功能需要連接網際網路才能正常運作
+3. 系統會在後台自動處理 Token 刷新
+
+## cli.py 使用指南 (僅供單元測試使用)
+### 示範指令(執行目錄為Yugabyte資料夾時)
 ```bash
 # Jason登入(員工角色)
 python .\access_control_system\cli.py login
@@ -121,36 +179,16 @@ python .\access_control_system\cli.py login
 
 # 執行打卡
 python .\access_control_system\cli.py clock
-# 輸入: i (上班打卡)
-# 輸入: o (下班打卡)
 
 # 查詢記錄與薪資
 python .\access_control_system\cli.py records
 python .\access_control_system\cli.py salary
-```
 
-### 主管操作
-```bash
-# Sally登入(主管角色)
-python .\access_control_system\cli.py login
-# 輸入: Sally / Sally / boss
-
-# John登入(主管角色)
-python .\access_control_system\cli.py login
-# 輸入: John / John / boss
-```
-
-### 通用操作
-```bash
 # 查看登入狀態
 python .\access_control_system\cli.py status
 
 # 登出系統
 python .\access_control_system\cli.py logout
-
-# 註冊新員工
-python .\access_control_system\cli.py register
-# 依提示輸入帳號、密碼及主管帳號
 ```
 
 
