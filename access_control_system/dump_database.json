@@ -1,114 +1,217 @@
 {
     "author": [
         {
-            "user_id": "Jason",
-            "access_token": "7fa8a6e9fde2f4e1dfe6fb029af47c9633d4b7a616a42c3b2889c5226a20238d",
-            "refresh_token": "56e4d47b8bbbc0e2c4b9c80c0a21d10cb64d618d36a970706edbb14b4d9baca8",
-            "created_at": 1747199367.6286883
+            "user_id": "Sally",
+            "access_token": "161c61c5b0254f9f41b0de7b86115d28b407a392c8c016e472f2c504f33a11bd",
+            "refresh_token": "3eebc4e6b78723c41c2ef745833717d07c79bb921155e6c44e42c76addcfe173",
+            "created_at": 1748134002.4866319
         },
         {
             "user_id": "John",
             "access_token": "a8cfcd74832004951b4408cdb0a5dbcd8c7e52d43f7fe244bf720582e05241da",
             "refresh_token": "93bab15b9bb13ad3291ed6c74ea7fbc870ccce7722fe823f2fb58a049df67940",
-            "created_at": 1747199370.0432384
-        },
-        {
-            "user_id": "Jason",
-            "access_token": "7fa8a6e9fde2f4e1dfe6fb029af47c9633d4b7a616a42c3b2889c5226a20238d",
-            "refresh_token": "56e4d47b8bbbc0e2c4b9c80c0a21d10cb64d618d36a970706edbb14b4d9baca8",
-            "created_at": 1747199367.6286883
-        },
-        {
-            "user_id": "Sally",
-            "access_token": "161c61c5b0254f9f41b0de7b86115d28b407a392c8c016e472f2c504f33a11bd",
-            "refresh_token": "3eebc4e6b78723c41c2ef745833717d07c79bb921155e6c44e42c76addcfe173",
-            "created_at": 1747199368.7637284
+            "created_at": 1748134003.0927854
         },
         {
             "user_id": "John",
             "access_token": "a8cfcd74832004951b4408cdb0a5dbcd8c7e52d43f7fe244bf720582e05241da",
             "refresh_token": "93bab15b9bb13ad3291ed6c74ea7fbc870ccce7722fe823f2fb58a049df67940",
-            "created_at": 1747199370.0432384
+            "created_at": 1748134003.0927854
+        },
+        {
+            "user_id": "Jason",
+            "access_token": "7fa8a6e9fde2f4e1dfe6fb029af47c9633d4b7a616a42c3b2889c5226a20238d",
+            "refresh_token": "56e4d47b8bbbc0e2c4b9c80c0a21d10cb64d618d36a970706edbb14b4d9baca8",
+            "created_at": 1748134001.9054494
+        },
+        {
+            "user_id": "Kevin",
+            "access_token": "0e4dd66217fc8d2e298b78c8cd9392870dcd065d0ff675d0edff5bcd227837e9",
+            "refresh_token": "87c48be138657ed5c2107ff638a646dee87847a3f3928ec8fee0a8f65e191b6f",
+            "created_at": 1748136133.3703694
         },
         {
             "user_id": "Sally",
             "access_token": "161c61c5b0254f9f41b0de7b86115d28b407a392c8c016e472f2c504f33a11bd",
             "refresh_token": "3eebc4e6b78723c41c2ef745833717d07c79bb921155e6c44e42c76addcfe173",
-            "created_at": 1747199368.7637284
+            "created_at": 1748134002.4866319
+        },
+        {
+            "user_id": "Jason",
+            "access_token": "7fa8a6e9fde2f4e1dfe6fb029af47c9633d4b7a616a42c3b2889c5226a20238d",
+            "refresh_token": "56e4d47b8bbbc0e2c4b9c80c0a21d10cb64d618d36a970706edbb14b4d9baca8",
+            "created_at": 1748134001.9054494
+        },
+        {
+            "user_id": "Kevin",
+            "access_token": "0e4dd66217fc8d2e298b78c8cd9392870dcd065d0ff675d0edff5bcd227837e9",
+            "refresh_token": "87c48be138657ed5c2107ff638a646dee87847a3f3928ec8fee0a8f65e191b6f",
+            "created_at": 1748136133.3703694
         }
     ],
     "record": [
         {
             "user_id": "Jason",
             "type": "i",
-            "time": 1747199372.3048294
+            "time": 1748136211.420595
         },
         {
             "user_id": "Jason",
             "type": "i",
-            "time": 1747199372.3048294
+            "time": 1748134004.419717
         },
         {
             "user_id": "Jason",
             "type": "o",
-            "time": 1747199373.356867
+            "time": 1748136230.522056
+        },
+        {
+            "user_id": "John",
+            "type": "i",
+            "time": 1748136304.5590389
+        },
+        {
+            "user_id": "Jason",
+            "type": "i",
+            "time": 1748136211.420595
+        },
+        {
+            "user_id": "Jason",
+            "type": "i",
+            "time": 1748134004.419717
         },
         {
             "user_id": "Jason",
             "type": "o",
-            "time": 1747199373.356867
+            "time": 1748134005.018558
+        },
+        {
+            "user_id": "Jason",
+            "type": "o",
+            "time": 1748136230.522056
+        },
+        {
+            "user_id": "John",
+            "type": "i",
+            "time": 1748136304.5590389
+        },
+        {
+            "user_id": "Jason",
+            "type": "o",
+            "time": 1748134005.018558
         }
     ],
     "log": [
         {
             "user_id": "Jason",
-            "type": "late",
-            "time": 1747199376.6389065,
-            "duration": 3600.0
-        },
-        {
-            "user_id": "Jason",
             "type": "absent",
-            "time": 1747199375.5845978,
+            "time": 1748134006.2594388,
             "duration": 28800.0
         },
         {
             "user_id": "Jason",
-            "type": "absent",
-            "time": 1747199375.5845978,
-            "duration": 28800.0
+            "type": "late",
+            "time": 1748134883.6538348,
+            "duration": 299.40115904808044
+        },
+        {
+            "user_id": "Jason",
+            "type": "late",
+            "time": 1748134883.6538348,
+            "duration": 299.40115904808044
+        },
+        {
+            "user_id": "Jason",
+            "type": "late",
+            "time": 1748134884.7745748,
+            "duration": 299.40115904808044
+        },
+        {
+            "user_id": "Jason",
+            "type": "late",
+            "time": 1748134329.4339235,
+            "duration": 299.40115904808044
         },
         {
             "user_id": "Jason",
             "type": "overtime",
-            "time": 1747199377.6952744,
-            "duration": 7200.0
-        },
-        {
-            "user_id": "Jason",
-            "type": "overtime",
-            "time": 1747199377.6952744,
+            "time": 1748134007.3855321,
             "duration": 7200.0
         },
         {
             "user_id": "Jason",
             "type": "late",
-            "time": 1747199376.6389065,
+            "time": 1748134327.5926116,
+            "duration": 299.40115904808044
+        },
+        {
+            "user_id": "Jason",
+            "type": "overtime",
+            "time": 1748134007.3855321,
+            "duration": 7200.0
+        },
+        {
+            "user_id": "Jason",
+            "type": "late",
+            "time": 1748134006.8063135,
             "duration": 3600.0
+        },
+        {
+            "user_id": "Jason",
+            "type": "late",
+            "time": 1748134006.8063135,
+            "duration": 3600.0
+        },
+        {
+            "user_id": "Jason",
+            "type": "late",
+            "time": 1748134329.4339235,
+            "duration": 299.40115904808044
+        },
+        {
+            "user_id": "Jason",
+            "type": "late",
+            "time": 1748134327.5926116,
+            "duration": 299.40115904808044
+        },
+        {
+            "user_id": "Jason",
+            "type": "late",
+            "time": 1748134884.7745748,
+            "duration": 299.40115904808044
+        },
+        {
+            "user_id": "Jason",
+            "type": "absent",
+            "time": 1748134006.2594388,
+            "duration": 28800.0
         }
     ],
     "salary": [
         {
-            "user_id": "Jason",
+            "user_id": "Kevin",
             "salary": 10000.0
         },
         {
             "user_id": "Jason",
+            "salary": 9400.0
+        },
+        {
+            "user_id": "Kevin",
             "salary": 10000.0
+        },
+        {
+            "user_id": "Jason",
+            "salary": 9400.0
         }
     ],
     "employee_account": [
         {
+            "account": "Kevin",
+            "password": "Kevin",
+            "boss_id": "John"
+        },
+        {
             "account": "Jason",
             "password": "Jason",
             "boss_id": "Sally"
@@ -117,6 +220,11 @@
             "account": "Jason",
             "password": "Jason",
             "boss_id": "Sally"
+        },
+        {
+            "account": "Kevin",
+            "password": "Kevin",
+            "boss_id": "John"
         }
     ],
     "boss_account": [
@@ -125,12 +233,12 @@
             "password": "Sally"
         },
         {
-            "account": "Sally",
-            "password": "Sally"
-        },
-        {
             "account": "John",
             "password": "John"
+        },
+        {
+            "account": "Sally",
+            "password": "Sally"
         },
         {
             "account": "John",

@@ -243,15 +243,15 @@ def run_authorization():
             # 如果 JSON 請求體中沒有數據，嘗試從 URL 參數中獲取
             access_token = request.args.get('access_token')
             user_id = request.args.get('user_id')
-            
+
             # 如果 URL 參數中也沒有數據，嘗試從 HTTP 頭部中獲取
             if not access_token or not user_id:
                 access_token = request.headers.get('Authorization')
                 user_id = request.headers.get('X-User-ID')
-                
+
         if not access_token or not user_id:
             return jsonify({"result": "Invalid", "message": "未提供認證信息"}), 401
-            
+
         result = authorization(access_token, user_id)
         if result == "Invalid":
             return jsonify({"result": "Invalid"}), 401
@@ -282,7 +282,7 @@ def run_update_token():
 # finish backup database
 
 
-@app.route('/record', methods=['GET','POST'])
+@app.route('/record', methods=['GET', 'POST'])
 def record_handler():
     if request.method == 'GET':
         # --- 取資料 Record & EmployeeAccount ---
@@ -692,7 +692,7 @@ def get_subordinate_record():
 
                 # 獲取所有下屬
                 subordinates = get_subordinates(boss_id, cursor)
-                
+
                 # 檢查請求的用戶是否為下屬
                 if not subordinates or user_id not in subordinates:
                     return jsonify({'status': 'error', 'message': '無權限查詢該員工或該員工不存在'}), 403
@@ -707,7 +707,7 @@ def get_subordinate_record():
                     FROM Record
                     WHERE user_id = %s AND time >= %s AND time <= %s
                 """, (user_id, start_time, end_time,))
-                
+
                 records = cursor.fetchall()
                 result = []
                 for record in records:
@@ -717,7 +717,7 @@ def get_subordinate_record():
                         'time': record[2]
                     }
                     result.append(record_info)
-                
+
                 return jsonify({"status": "success", "data": result}), 200
 
         except Exception as e:
@@ -737,7 +737,7 @@ def get_subordinate_record():
 
                 # 獲取所有下屬
                 subordinates = get_subordinates(boss_id, backup_cursor)
-                
+
                 # 檢查請求的用戶是否為下屬
                 if not subordinates or user_id not in subordinates:
                     return jsonify({'status': 'error', 'message': '無權限查詢該員工或該員工不存在'}), 403
@@ -752,7 +752,7 @@ def get_subordinate_record():
                     FROM Record
                     WHERE user_id = %s AND time >= %s AND time <= %s
                 """, (user_id, start_time, end_time,))
-                
+
                 records = backup_cursor.fetchall()
                 result = []
                 for record in records:
@@ -762,7 +762,7 @@ def get_subordinate_record():
                         'time': record[2]
                     }
                     result.append(record_info)
-                
+
                 print("Using Backup Successfully")
                 return jsonify({"status": "success", "data": result}), 200
 
@@ -788,7 +788,7 @@ def subordinate_salary():
 
             # 獲取所有下屬
             subordinates = get_subordinates(boss_id, cursor)
-            
+
             # 檢查請求的用戶是否為下屬
             if not subordinates or user_id not in subordinates:
                 return jsonify({'status': 'error', 'message': '無權限查詢該員工或該員工不存在'}), 403
@@ -799,7 +799,7 @@ def subordinate_salary():
                 FROM Salary
                 WHERE user_id = %s
             """, (user_id, ))
-            
+
             salary_records = cursor.fetchall()
             result = []
             for record in salary_records:
@@ -808,7 +808,7 @@ def subordinate_salary():
                     'salary': record[1]
                 }
                 result.append(salary_info)
-            
+
             return jsonify({"status": "success", "data": result}), 200
 
     except Exception as e:
@@ -824,7 +824,7 @@ def subordinate_salary():
 
                 # 獲取所有下屬
                 subordinates = get_subordinates(boss_id, cursor)
-                
+
                 # 檢查請求的用戶是否為下屬
                 if not subordinates or user_id not in subordinates:
                     return jsonify({'status': 'error', 'message': '無權限查詢該員工或該員工不存在'}), 403
@@ -835,7 +835,7 @@ def subordinate_salary():
                     FROM Salary
                     WHERE user_id = %s
                 """, (user_id, ))
-                
+
                 salary_records = cursor.fetchall()
                 result = []
                 for record in salary_records:
@@ -844,10 +844,10 @@ def subordinate_salary():
                         'salary': record[1]
                     }
                     result.append(salary_info)
-                
+
                 print("Using Backup Successfully")
                 return jsonify({"status": "success", "data": result}), 200
-                
+
         except Exception as backup_e:
             print("Exception while connecting to Backup YugabyteDB")
             print(backup_e)
@@ -1040,7 +1040,7 @@ def verify_employee_token(header):
 
     # 直接調用 authorization 函數，而不是通過 HTTP 請求
     auth_result = authorization(access_token, user_id)
-    
+
     if auth_result != "Valid":
         if auth_result == "Expired":
             return jsonify({'status': 'error', 'message': '認證已過期'}), 401
@@ -1062,7 +1062,7 @@ def employee_records():
     token_response = verify_employee_token(header)
     if token_response[1] != 200:
         return token_response
-        
+
     # 現有的 GET 方法處理
     if request.method == 'GET':
         data = request.get_json()
@@ -1111,27 +1111,27 @@ def employee_records():
             return jsonify({'status': 'error', 'message': f'查詢失敗: {str(e)}'}), 500
         finally:
             conn.close()
-    
+
     # 新增的 POST 方法處理，將打卡記錄寫入 Record 表
     elif request.method == 'POST':
         data = request.get_json()
         user_id = data.get('user_id')
         record_type = data.get('type')  # 'i' 或 'o' 表示上班或下班
         record_time = data.get('time')
-        
+
         # 檢查參數
         if not user_id or not record_type or not record_time:
             return jsonify({'status': 'error', 'message': '缺少必要參數'}), 400
-            
+
         # check if user_id is valid
         header_user_id = header.get('X-User-ID')
         if header_user_id != user_id:
             return jsonify({'status': 'error', 'message': '無權限訪問'}), 403
-            
+
         # 檢查打卡類型
         if record_type not in ['i', 'o']:
             return jsonify({'status': 'error', 'message': '打卡類型必須為 i (上班) 或 o (下班)'}), 400
-            
+
         try:
             conn = get_db_connection()
             with conn.cursor() as cursor:
@@ -1140,25 +1140,27 @@ def employee_records():
                     INSERT INTO Record (user_id, type, time)
                     VALUES (%s, %s, %s)
                 """
-                cursor.execute(insert_query, (user_id, record_type, record_time))
+                cursor.execute(
+                    insert_query, (user_id, record_type, record_time))
                 conn.commit()
-                
+
                 # 備份到備份數據庫
                 try:
                     backup_conn = get_backup_db_connection()
                     with backup_conn.cursor() as backup_cursor:
-                        backup_cursor.execute(insert_query, (user_id, record_type, record_time))
+                        backup_cursor.execute(
+                            insert_query, (user_id, record_type, record_time))
                         backup_conn.commit()
                     backup_conn.close()
                     print("備份打卡記錄成功")
                 except Exception as backup_error:
                     print(f"備份打卡記錄失敗: {backup_error}")
-                
+
                 return jsonify({
                     'status': 'success',
                     'message': '打卡記錄已新增',
                 }), 201
-                
+
         except Exception as e:
             # 嘗試使用備份數據庫
             try:
@@ -1168,18 +1170,19 @@ def employee_records():
                         INSERT INTO Record (user_id, type, time)
                         VALUES (%s, %s, %s)
                     """
-                    backup_cursor.execute(insert_query, (user_id, record_type, record_time))
+                    backup_cursor.execute(
+                        insert_query, (user_id, record_type, record_time))
                     backup_conn.commit()
                 backup_conn.close()
-                
+
                 return jsonify({
                     'status': 'success',
                     'message': '打卡記錄已新增 (使用備份數據庫)',
                 }), 201
-                
+
             except Exception as backup_error:
                 return jsonify({
-                    'status': 'error', 
+                    'status': 'error',
                     'message': f'新增打卡記錄失敗: {str(e)}, 備份操作也失敗: {str(backup_error)}'
                 }), 500
         finally:
@@ -1292,7 +1295,7 @@ def login():
                 query = "SELECT * FROM bossaccount WHERE account = %s AND password = %s"
             else:
                 return jsonify({'status': 'error', 'message': '無效的角色'}), 400
-                
+
             cursor.execute(query, (account, password))
             user = cursor.fetchone()
 
@@ -1301,11 +1304,14 @@ def login():
 
             # 生成新的 token
             current_time = time.time()
-            new_access_token = hashlib.sha256((account + str(current_time)).encode()).hexdigest()
-            new_refresh_token = hashlib.sha256((account + "refresh" + str(current_time)).encode()).hexdigest()
+            new_access_token = hashlib.sha256(
+                (account + str(current_time)).encode()).hexdigest()
+            new_refresh_token = hashlib.sha256(
+                (account + "refresh" + str(current_time)).encode()).hexdigest()
 
             # 檢查用戶是否已有 token 記錄
-            cursor.execute("SELECT * FROM author WHERE user_id = %s", (account,))
+            cursor.execute(
+                "SELECT * FROM author WHERE user_id = %s", (account,))
             token_record = cursor.fetchone()
 
             if token_record:
@@ -1315,15 +1321,17 @@ def login():
                     SET access_token = %s, refresh_token = %s, created_at = %s 
                     WHERE user_id = %s
                 """
-                cursor.execute(update_query, (new_access_token, new_refresh_token, current_time, account))
+                cursor.execute(update_query, (new_access_token,
+                               new_refresh_token, current_time, account))
             else:
                 # 創建新的 token 記錄
                 insert_query = """
                     INSERT INTO Author (user_id, access_token, refresh_token, created_at)
                     VALUES (%s, %s, %s, %s)
                 """
-                cursor.execute(insert_query, (account, new_access_token, new_refresh_token, current_time))
-            
+                cursor.execute(
+                    insert_query, (account, new_access_token, new_refresh_token, current_time))
+
             conn.commit()
 
             # 備份到備份資料庫
@@ -1331,9 +1339,11 @@ def login():
                 backup_conn = get_backup_db_connection()
                 with backup_conn.cursor() as backup_cursor:
                     if token_record:
-                        backup_cursor.execute(update_query, (new_access_token, new_refresh_token, current_time, account))
+                        backup_cursor.execute(
+                            update_query, (new_access_token, new_refresh_token, current_time, account))
                     else:
-                        backup_cursor.execute(insert_query, (account, new_access_token, new_refresh_token, current_time))
+                        backup_cursor.execute(
+                            insert_query, (account, new_access_token, new_refresh_token, current_time))
                     backup_conn.commit()
                 backup_conn.close()
                 print("備份 token 更新成功")
@@ -1347,7 +1357,8 @@ def login():
                     'user_id': account,
                     'role': role,
                     'access_token': new_access_token,
-                    'refresh_token': new_refresh_token
+                    'refresh_token': new_refresh_token,
+                    'boss_id': user['boss_id'] if role == 'employee' else None
                 }
             }), 200
 
@@ -1363,7 +1374,7 @@ def login():
                     query = "SELECT * FROM bossaccount WHERE account = %s AND password = %s"
                 else:
                     return jsonify({'status': 'error', 'message': '無效的角色'}), 400
-                    
+
                 cursor.execute(query, (account, password))
                 user = cursor.fetchone()
 
@@ -1372,11 +1383,14 @@ def login():
 
                 # 生成新的 token
                 current_time = time.time()
-                new_access_token = hashlib.sha256((account + str(current_time)).encode()).hexdigest()
-                new_refresh_token = hashlib.sha256((account + "refresh" + str(current_time)).encode()).hexdigest()
+                new_access_token = hashlib.sha256(
+                    (account + str(current_time)).encode()).hexdigest()
+                new_refresh_token = hashlib.sha256(
+                    (account + "refresh" + str(current_time)).encode()).hexdigest()
 
                 # 檢查用戶是否已有 token 記錄
-                cursor.execute("SELECT * FROM author WHERE user_id = %s", (account,))
+                cursor.execute(
+                    "SELECT * FROM author WHERE user_id = %s", (account,))
                 token_record = cursor.fetchone()
 
                 if token_record:
@@ -1386,17 +1400,19 @@ def login():
                         SET access_token = %s, refresh_token = %s, created_at = %s 
                         WHERE user_id = %s
                     """
-                    cursor.execute(update_query, (new_access_token, new_refresh_token, current_time, account))
+                    cursor.execute(update_query, (new_access_token,
+                                   new_refresh_token, current_time, account))
                 else:
                     # 創建新的 token 記錄
                     insert_query = """
                         INSERT INTO Author (user_id, access_token, refresh_token, created_at)
                         VALUES (%s, %s, %s, %s)
                     """
-                    cursor.execute(insert_query, (account, new_access_token, new_refresh_token, current_time))
-                
+                    cursor.execute(
+                        insert_query, (account, new_access_token, new_refresh_token, current_time))
+
                 backup_conn.commit()
-                
+
                 print("使用備份資料庫登入成功")
                 return jsonify({
                     'status': 'success',
@@ -1411,9 +1427,7 @@ def login():
         except Exception as backup_e:
             print(f"備份資料庫登入失敗: {backup_e}")
             return jsonify({'status': 'error', 'message': f'登入失敗: {str(e)}，備份資料庫也失敗: {str(backup_e)}'}), 500
-    finally:
-        if conn:
-            conn.close()
+        conn.close()
 
 
 @app.route('/boss/subordinates', methods=['GET'])
@@ -1427,19 +1441,19 @@ def get_boss_subordinates():
         try:
             with conn.cursor() as cursor:
                 boss_id = request.headers.get('X-User-ID')
-                
+
                 # 查詢該主管的所有下屬
                 cursor.execute("""
                     SELECT account FROM employeeaccount WHERE boss_id = %s
                 """, (boss_id,))
-                
+
                 subordinates = [row[0] for row in cursor.fetchall()]
-                
+
                 if not subordinates:
                     return jsonify({'status': 'success', 'data': []}), 200
-                
+
                 return jsonify({'status': 'success', 'data': subordinates}), 200
-                
+
         except Exception as e:
             return jsonify({'status': 'error', 'message': f'查詢失敗: {str(e)}'}), 500
     except Exception as e:
@@ -1450,22 +1464,23 @@ def get_boss_subordinates():
             backup_conn = get_backup_db_connection()
             with backup_conn.cursor() as backup_cursor:
                 boss_id = request.headers.get('X-User-ID')
-                
+
                 # 查詢該主管的所有下屬
                 backup_cursor.execute("""
                     SELECT account FROM employeeaccount WHERE boss_id = %s
                 """, (boss_id,))
-                
+
                 subordinates = [row[0] for row in backup_cursor.fetchall()]
-                
+
                 if not subordinates:
                     return jsonify({'status': 'success', 'data': []}), 200
-                
+
                 return jsonify({'status': 'success', 'data': subordinates}), 200
         except Exception as e:
             print("Exception while connecting to Backup YugabyteDB")
             print(e)
             return jsonify({'status': 'error', 'message': '資料庫連線失敗'}), 500
+
 
 # test
 if __name__ == "__main__":
