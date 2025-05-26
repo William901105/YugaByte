@@ -1,3 +1,80 @@
+# 門禁控制系統啟動與使用指南
+*employeeUI.py 是一個整合了命令列功能和互動式界面的員工系統，結合了即時通知功能。*
+*bossUI.py 是一個整合了命令列功能和互動式界面的老闆系統，提供了員工打卡記錄和薪資查詢功能。*
+
+## 啟動方式
+```bash
+# 進入 YugabyteDB 資料夾
+cd YugaByte
+
+# 下載必要的 Python 套件
+pip install -r access_control_system/requirements.txt
+
+# 開啟必要系統資源
+.\setup.bat
+or double click setup.bat
+需輸入資料庫連線資訊
+
+# 模擬主要資料庫損毀
+.\simulate_backup.bat 
+or double click simulate_backup.bat
+
+# 進入互動模式（預設）
+python .\access_control_system\<employeeUI or bossUI>.py
+or
+.\<employeeUI or bossUI>.bat
+or
+double click <employeeUI or bossUI>.bat
+
+# 使用命令列模式
+python .\access_control_system\<employeeUI or bossUI>.py [action]
+# 其中 [action] 可以是：register、login、logout、status、clock、records、salary、interactive
+```
+
+### 互動模式功能(以employee為例)
+1. **啟動時顯示歡迎選單**
+   - 登入系統
+   - 註冊新員工
+   - 退出程式（隱藏功能）
+
+2. **登入後的主選單**
+   - 打卡（上班/下班）
+   - 查詢打卡記錄
+   - 查詢薪資
+   - 查詢登入狀態
+   - 查看通知（有新通知時會標記）
+   - 登出系統
+   - 退出程式（隱藏功能）
+
+3. **特色功能**
+   - MQTT 即時通知功能
+   - 自動保存登入狀態
+   - Token 自動更新機制
+   - 支援多種時間格式輸入
+
+### 示範操作
+```bash
+# 啟動互動模式
+./employee.bat
+
+# 選擇 1 登入系統，輸入帳號密碼
+# 例如: Jason / Jason
+
+# 登入成功後，選擇功能編號使用對應功能
+# 1: 打卡
+# 2: 查詢打卡記錄
+# 3: 查詢薪資
+# 4: 查詢登入狀態
+# 5: 查看通知
+# 6: 登出系統
+# 0: 退出程式（隱藏功能，與登出的差異在會保留登入資訊，下次打開會跳過登入）
+```
+
+### 注意事項
+1. 登入資訊儲存於 /access_control_system/employee_session.json
+2. 通知功能需要連接網際網路才能正常運作
+3. 系統會在後台自動處理 Token 刷新
+
 # YugaByte Installation
 ## Enviroment
 1. ubuntu 20.04
@@ -113,63 +190,6 @@ You can see more information on https://hackmd.io/@WEIHUNGLIN/Bk8-pEnsyl
 	3.登入資訊儲存於/access_control_system/session.json
 	4.注意：cli.py 目前僅用於單元測試，實際使用請參考以下 employeeUI.py 的說明
 
-## employeeUI.py 使用指南
-employeeUI.py 是一個整合了命令列功能和互動式界面的員工系統，結合了即時通知功能。
-
-### 啟動方式
-```bash
-# 進入互動模式（預設）
-python .\access_control_system\employeeUI.py
-
-
-# 使用命令列模式
-python .\access_control_system\employeeUI.py [action]
-# 其中 [action] 可以是：register、login、logout、status、clock、records、salary、interactive
-```
-
-### 互動模式功能
-1. **啟動時顯示歡迎選單**
-   - 登入系統
-   - 註冊新員工
-   - 退出程式（隱藏功能）
-
-2. **登入後的主選單**
-   - 打卡（上班/下班）
-   - 查詢打卡記錄
-   - 查詢薪資
-   - 查詢登入狀態
-   - 查看通知（有新通知時會標記）
-   - 登出系統
-   - 退出程式（隱藏功能）
-
-3. **特色功能**
-   - MQTT 即時通知功能
-   - 自動保存登入狀態
-   - Token 自動更新機制
-   - 支援多種時間格式輸入
-
-### 示範操作
-```bash
-# 啟動互動模式
-python .\access_control_system\employeeUI.py
-
-# 選擇 1 登入系統，輸入帳號密碼
-# 例如: Jason / Jason
-
-# 登入成功後，選擇功能編號使用對應功能
-# 1: 打卡
-# 2: 查詢打卡記錄
-# 3: 查詢薪資
-# 4: 查詢登入狀態
-# 5: 查看通知
-# 6: 登出系統
-# 0: 退出程式（隱藏功能，與登出的差異在會保留登入資訊，下次打開會跳過登入）
-```
-
-### 註意事項
-1. 登入資訊儲存於 /access_control_system/employee_session.json
-2. 通知功能需要連接網際網路才能正常運作
-3. 系統會在後台自動處理 Token 刷新
 
 ## cli.py 使用指南 (僅供單元測試使用)
 ### 示範指令(執行目錄為Yugabyte資料夾時)

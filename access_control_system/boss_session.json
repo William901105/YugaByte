@@ -1,1 +1,6 @@
-{"access_token": "af8435e0305f522e590f02d8a6908f5492ee5e4a1d6078fbe884894cd333ad93", "refresh_token": "41ba0c89ad49a07777b8cdd47aa1653cdbbc518226d4a37955b5f7917f81cdd9", "user_id": "Sally", "role": "boss"}
+{
+    "access_token": null,
+    "refresh_token": null,
+    "user_id": null,
+    "role": null
+}

@@ -52,6 +52,7 @@ def get_db_connection():
 
 
 def get_backup_db_connection():
+    print("Using Backup YugabyteDB")
     return psycopg2.connect(
         host=BACKUPHOST,
         port=BACKUPPORT,
