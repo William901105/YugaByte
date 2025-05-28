@@ -131,6 +131,15 @@ def init_mqtt_client():
     global mqtt_client
     if mqtt_client is None:
         try:
+            # 確認 session 中有必要的資訊
+            if not session.get("user_id"):
+                print("\n尚未登入，無法初始化 MQTT 客戶端")
+                return
+                
+            if not session.get("boss_id"):
+                print("\n無法獲取主管資訊，MQTT 通知功能可能無法正常運作")
+                # 仍然繼續初始化，但不訂閱主題
+            
             # 使用較新的 MQTT Client API 版本，避免警告訊息
             mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
             mqtt_client.on_connect = on_connect
@@ -147,12 +156,16 @@ def init_mqtt_client():
             while wait_count < 10:  # 最多等待 5 秒
                 time.sleep(0.5)
                 wait_count += 1
-                if session["user_id"] and mqtt_client.is_connected():
+                if mqtt_client.is_connected():
                     print(f"\n已成功連接到 MQTT 服務器")
-                    # 訂閱該員工的通知信息
-                    topic = f"warning/{session['boss_id']}/{session['user_id']}"
-                    mqtt_client.subscribe(topic)
-                    print(f"已訂閱主題: {topic}")
+                    
+                    # 只有在有 boss_id 的情況下才訂閱主題
+                    if session.get("boss_id") and session.get("user_id"):
+                        topic = f"warning/{session['boss_id']}/{session['user_id']}"
+                        mqtt_client.subscribe(topic)
+                        print(f"已訂閱主題: {topic}")
+                    else:
+                        print(f"無法訂閱通知主題：缺少必要資訊")
                     break
 
             if wait_count >= 10:
@@ -226,7 +239,12 @@ def login():
                 session["refresh_token"] = data["data"]["refresh_token"]
                 session["user_id"] = account
                 session["role"] = "employee"
-                session["boss_id"] = data["data"]["boss_id"]  # 儲存主管帳號
+                # 檢查是否有 boss_id 並儲存
+                if "boss_id" in data["data"] and data["data"]["boss_id"]:
+                    session["boss_id"] = data["data"]["boss_id"]  # 儲存主管帳號
+                else:
+                    session["boss_id"] = None
+                    print("\n警告: 無法獲取主管資訊，部分功能可能無法正常運作")
                 save_session(session)
                 print("\n登入成功！")
                 print(f"使用者: {account}")
@@ -422,8 +440,8 @@ def query_records():
             f"{BASE_URL}/employee/records",
             json={
                 "user_id": session["user_id"],
-                "start_time": start_time,
-                "end_time": end_time
+                "time_start": start_time,  # 改為 time_start
+                "time_end": end_time       # 改為 time_end
             },
             headers=headers
         )
